@@ -19,7 +19,7 @@
 \kern5pt
 
 In this paper we will define the concept of linear reduction in the context of syntax parsing.
-We will progress through more and more complicated examples, beginning from the programming of a simple calculator until we ultimately have created an extensible programming language.
+We will progress through more and more complicated examples, beginning from the programming of a simple calculator until we ultimately have created an extensible programming language, which we call Lang-X.
 
 \kern5pt
 \hrule
@@ -240,7 +240,7 @@ index such that $\sigma\in{\rm dom}s_i$.
 
 \section{The Grammar}
 
-In this section we discuss the grammar of the language.
+In this section we discuss the grammar of the language of Lang-X.
 This is not naturally imposed by the parser, but it will properly parse programs of this form.
 
 \medskip
@@ -277,7 +277,7 @@ This is not naturally imposed by the parser, but it will properly parse programs
 
 \subsection{The Initial Beta Reducer}
 
-We now describe the initial beta reducer according to stateful reduction.
+We now describe the initial beta reducer of Lang-X according to stateful reduction.
 By convention, {\astyle atomic abstract terms} will be red, {\tstyle type terms} will be green, {\istyle internal terms} will be blue.
 
 \noindent{\bf End}:
@@ -524,6 +524,171 @@ The initial priority function, $\pi$, is defined as follows:
 
 \noindent Everything else is mapped to $\infty$
 }}
+
+\vfill\break
+
+\section{Proving Equivalence}
+
+In this section we will prove that our algorithm interprets according to the proper order of operations.
+Specifically we will define a natural method of parsing and interpreting a numerical expression, and show that given a valid expression our algorithm gives the same result.
+
+The problem can be formulated as follows: we are given the following:
+\benum
+    \item A set $\s X$, which is our {\it universe}.
+    \item A set $\s S$ of {\it operator symbols}.
+    \item For every operator symbol $\s s\in\s S$, a function $f_{\s s}\colon\s X\times\s X\longto\s X$.
+    \item For every operator symbol $\s s\in\s S$, a {\it priority} $\pi(\s s)\in{\bb N}$.
+\eenum
+We define the following grammar of {\it expressions}:
+$$ {\sl expr} \ccoloneqq ({\sl expr}) \gbar {\sl expr}\ \s S\ {\sl expr} \gbar \s X $$
+\def\unparen{\hbox{\tencsc unparen}}%
+All operators are left-associative.
+We define $\unparen(\xi,i)$ to mean that the $i$th character in $\xi$ is not within parentheses (this can be implemented easily: iterate backwards and count how many opening and closing parentheses there
+are.
+If there are more opening than closing, than it is inside parentheses.)
+We now define the evaluator for expressions:
+
+\def\eval{\hbox{\tencsc eval}}
+\algorithm
+\Function{eval}{$\xi$}
+    \If{$\xi=\s x\in\s X$}
+        \State\Return $\s x$
+    \ElseIf{$\xi[0]=$`('}
+        \State $\xi$ is of the form $(\rho)\xi'$
+        \State\Return $\eval(\eval(\rho)\xi')$
+    \Else
+        \Comment Find the greatest index with the smallest operator.\cr
+        Note that $\max_i{\rm argmin}_if(i)$ is the maximal $i$ which minimizes $f$.\EndComment
+        \State $i\coloneqq\max_i{\rm argmin}_i\set{\pi(\xi[i])}[{\xi[i]\in\s S,\unparen(\xi,i)}]$
+        \State $\s s\coloneqq\xi[i]$
+        \Comment $\xi'=\xi[:i-1]$, $\xi''=\xi[i+1:]$ \EndComment
+        \State $\xi$ is of the form $\xi'\s s\xi''$
+        \State\Return $f_{\s s}(\eval(\xi'),\eval(\xi''))$
+    \EndIf
+\EndFunc
+\ealgorithm
+
+For our beta reducer, our type term will be $\s X$, the atomic abstract terms will be $\s S,\Lparen,\Rparen$, and printable terms will be elements of $\s X\cup\s S$.
+We will define the following initial beta reducer, we ignore states and printable term outputs because they are held constant:
+\blist
+    \item $\s X\ \s S\longto\s S\s X\ \snd\ (u,f\to(u,f))$
+    \item $\s S\s X\ \s S\s X \longto\s S\s X\ \snd\ ((u,f),(v,g)\to(f(u,v),g))$
+    \item $\s S\s X\ \s X\longto\s X\ \snd\ ((u,f),v\to f(u,v))$
+    \item $\s X\ \Rparen \longto \Rparen\s X\ \snd\ (u,\_\to u)$
+    \item $\s S\s X\ \Rparen\s X \longto\Rparen\s X\ \snd\ ((u,f),v\to f(u,v))$
+    \item $\Lparen\ \Rparen\s X \longto\s X\ \snd\ (\_,u\to u)$
+\elist
+\noindent The initial state is self-explanatory.
+The initial priorities map $\s x\in\s X$ to $\infty$, $\s s\in\s S$ to $\pi(\s s)$, $($ to $\infty$, and $)$ to $0$.
+Since the state never changes, we can assume that all tokens are given their value in the initial state from the outset.
+
+Let $\beta^*$ be the total $\beta$-reducer: it iteratively applies $\beta$ until convergence
+We also define $\beta_0$ and $\beta^*_0$ which include the rule that if $\xi$ is a single character $\sigma_n(u)$ then $\beta_0\xi=\sigma_0(u)$.
+We write $\xi\tos\xi'$ to mean that successive applications of $\beta_0$ lead from $\xi$ to $\xi'$.
+
+Let us define the following set of {\it reduced expressions}, as a grammar including priorities:
+$$ {\sl rexpr} \ccoloneqq \s X_n\gbar \s S\s X_n\ {\sl rexpr}\gbar \s X_n\ \s S_m\ {\sl rexpr}\ (n\geq m) $$
+Say that a string of internal terms $S$ is {\it closed under $\beta$-reductions} if for every string $\xi\in S$ with arbitrary priorities, $\beta\gen\xi\in S$.
+
+\lemm
+    ${\sl rexpr}$ is closed under $\beta$-reductions.
+    And under $\beta_0$-reductions, every reduced expression converges to an element in $\s X$.
+\elemm
+
+\Proof We induct on the length of the string $\xi$.
+We split into cases
+\benum
+    \item A string of the form $\s X_n$ retains its value under a $\beta$-reduction.
+    \item For string of the form $\s S\s X_n\xi$, we have the following cases:
+        \benum
+            \item $\xi=\s X_m$, if $n\geq m$ this becomes $\s X_m\in{\sl rexpr}$.
+                Otherwise, a $\beta$-reduction gives $\s S\s X_n\beta\gen{\s X_m}=\s S\s X_n\s X_m\in{\sl rexpr}$.
+            \item $\xi=\s S\s X_m\xi'$, if $n\geq m$ then this becomes $\s S\s X_m\xi'\in{\sl rexpr}$.
+                Otherwise, a $\beta$-reduction gives $\s S\s X_n\beta\gen{\xi}$, and $\beta\gen{\xi}\in{\sl rexpr}$ inductively.
+            \item $\xi=\s X_m\ \s S_k\xi'$, if $n\geq m$ then this becomes $\s X_m\ \s S_k\xi'\in{\sl rexpr}$.
+                Otherwise, a $\beta$-reduction gives $\s S\s X_n\beta\gen{\xi}\in{\sl rexpr}$ inductively.
+        \eenum
+    \item For a string of the form $\s X_n\s S_m\xi$, if $n\geq m$ then a $\beta$-reduction gives $\s S\s X_m\xi\in{\sl rexpr}$.
+        Otherwise we get $\s X_n\beta\gen{\s S_m\xi}$, but there are no reduction rules in which $\s S$ is the first term, so this is just $\s X_n\s S_m\gen\xi\in{\sl rexpr}$ inductively.
+\eenum
+
+For the second claim, we inductively show that if $\xi\neq\s X$ has a final priority of $0$ then a $\beta_0$ reduction will decrease its length by $1$, and if its final priority is $>0$ then it either
+decreases its length by $1$ or sets its final priority to $0$.
+\benum
+    \item If $\xi=\s S\s X_n\xi'$, then a $\beta_0$-reduction either compounds $\s S\s X_n$ with another token, or gives $\s S\s X_n\beta_0\gen{\xi'}$, which inductively will decrease $\xi'$'s length by $1$
+        if $\xi'$'s final priority is zero, or will decrease it by a token or set its final priority to zero otherwise.
+    \item If $\xi=\s X_n\ \s S_m\xi'$, since $n\geq m$ then this reduces to $\s S\s X_m\xi'$, which is one token less.
+\eenum
+So this means that every two $\beta_0$-reductions (in fact every single $\beta_0$-reduction, since we can never increase a priority: once a token's priority is $0$, it will never increase) will decrease
+the length of the string.
+This means that eventually the string will converge to a single token.
+Since ${\sl rexpr}$ is closed under $\beta_0$-reductions, this string must be in $\s X$.
+\qed
+
+Note that ${\sl expr}\subseteq{\sl rexpr}$ since ${\sl expr}\ccoloneqq\s X_\infty\gbar\s S_n\ \s X_\infty\ {\sl expr}$.
+So when $\beta$-reducing an expression, we will remain inside ${\sl rexpr}$.
+
+Notice that if $\xi\in{\sl rexpr}$ then $\beta^*\gen\xi$ cannot contain a substring of the form $\s X_n\ \s S_m$ since this can be reduced.
+And since by the above lemma, $\beta^*\gen\xi\in{\sl rexpr}$, we have $\beta^*\gen\xi=\s S\s X_{n_1}\s S\s X_{n_2}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$ with $n_1<\cdots<n_k<n_{k+1}$.
+
+Instead of writing
+\blist
+    \item $\s X_n(\s x)$, we write $\s x_n$.
+    \item $\s S_n(f_{\s s})$, we write $\s s_n$.
+    \item $\s S\s X_n(\s x,f_{\s s})$, we write $\s s_n[\s x]$.
+\elist
+
+We begin with the case that $\xi$ does not include any parentheses.
+Let us define $\pi(\xi)=\set{\pi(\xi[i])}_{0\leq i<\abs\xi}$.
+
+\lemm
+    Let $\xi\in{\sl rexpr}$ such that $\pi(\xi)\geq n$, then $\beta^*\gen{\xi\s s_n}=\s s_n[\beta^*_0\gen\xi]$.
+\elemm
+
+\Proof we know that $\xi\s s_n$ is reduced to, at some point, $\beta^*\gen\xi\s s_n$, and as noted this is equal to
+$$ \s s_{n_1}^1[\s x^1]\cdots\s s^k_{n_k}[\s x^k]\s x^{k+1}_{n_{k+1}}\s s_n,\qquad n\leq n_1<\cdots<n_k<n_{k+1} $$
+Then a $\beta$-reduction gives
+$$ \s s^1_{n_1}[\s x^1]\cdots\s s^k_{n_k}[\s x^k]\s s_n[\s x^{k+1}] $$
+and further $\beta$-reductions give (instead $f_{\s s_i}$ we'll write $f_i$):
+$$ \s s^1_{n_1}[\s x^1]\cdots\s s_n[f_k(\s x^k,\s x^{k+1})] \to \cdots \to \s s_n\bigl[f_1(\s x^1,f_2(\s x^2,\cdots))\bigr] $$
+And we see that $\beta_0$-reducing $\xi$ gives precisely $f_1(\s x^1,f_2(\s x^2,\cdots))$, as required.
+\qed
+
+\lemm
+    If $\xi\in{\sl rexpr}$ and $n<\pi(\xi)$ then $\beta^*_0\gen{\s s_n[\s x]\xi}=f_{\s s}(\s x,\beta^*_0\gen\xi)$.
+\elemm
+
+\Proof since $n<\pi(\xi)$, $\s s_n[\s x]$ cannot reduce with the first element of $\xi$, so $\beta_0\gen{\s s_n[\s x]\xi}=\s s_n[\s x]\beta_0\gen\xi$.
+If $\xi$ can be $\beta$-reduced, then we simply induct on the new string, which is one token less.
+Otherwise $\xi=\s s^1_{n_1}[\s x^1]\cdots\s s^k_{n_k}[\s x^k]\s x_{n_{k+1}}^{k+1}$ with $n_1<\cdots<n_{k+1}$, as remarked before.
+Then we continue with a similar process as before.
+\qed
+
+Let $\xi\in{\sl expr}$, define ${\rm sym}(\xi)$ be the operator symbols in $\xi$.
+By {\it inducting on the levels of priority}: we mean induction on $\pi{\rm sym}(\xi)$.
+
+\thrm
+    Let $\xi\in{\sl expr}$, then $\beta^*_0\gen\xi=\hbox{\tencsc eval}(\xi)$.
+\ethrm
+
+\Proof we induct on the levels of priority in $\xi$.
+If $\xi=\s x_n$ then this is trivial.
+Otherwise let $n$ be the lowest priority of operator in $\xi$, so $\xi$ is of the form
+$$ \xi = \xi_1\s s_n^1\xi_2\s s_n^2\cdots\xi_k\s s_n^k\xi_{k+1} $$
+Now notice that
+$$ \xi \to \beta^*\gen{\xi_1\s s_n^1\xi_2\cdots\xi_k\s s_n^k}\xi_{k+1} $$
+by lemma 4.0.2 this is equal to
+$$ \xi \to \s s_n^k[\beta^*_0\gen{\xi_1\s s_n^1\cdots\s s_n^{k-1}\xi_k}]\xi_{k+1} $$
+and by lemma 4.0.3 reducing this gives
+$$ f_k\bigl(\beta^*_0\gen{\xi_1\s s^1_n\cdots\s s^k_n\xi_k},\beta^*_0\gen{\xi_{k+1}}\bigr) $$
+Continuing inductively on $k$, we get
+$$ f_k\bigl(\cdots f_2(f_1(\beta^*_0\gen{\xi_1},\beta^*_0\gen{\xi_2}),\beta^*_0\gen{\xi_3})\cdots,\beta^*_0\gen{\xi_{k+1}}\bigr) $$
+By induction, this is just
+$$ f_k\bigl(\cdots f_2(f_1(\eval(\xi_1),\eval(\xi_2)),\eval(\xi_3))\cdots,\eval(\xi_{k+1})\bigr) \eqnum[bsres] $$
+Now notice that
+$$ \eval(\xi) = f_k(\eval(\xi_1\s s_n^1\cdots\s s_n^{k-1}\xi_k),\eval(\xi_{k+1})) $$
+And continuing we get that this is equal to $(\bsres)$, as required.
+\qed
 
 \bye
 
