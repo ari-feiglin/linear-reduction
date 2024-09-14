@@ -540,9 +540,10 @@ The problem can be formulated as follows: we are given the following:
     \item For every operator symbol $\s s\in\s S$, a {\it priority} $\pi(\s s)\in{\bb N}$.
 \eenum
 We define the following grammar of {\it expressions}:
-$$ {\sl expr} \ccoloneqq ({\sl expr}) \gbar {\sl expr}\ \s S\ {\sl expr} \gbar \s X $$
+$$ {\sl expr} \ccoloneqq \s L\ {\sl expr}\ \s R \gbar {\sl expr}\ \s S\ {\sl expr} \gbar \s X $$
 \def\unparen{\hbox{\tencsc unparen}}%
 All operators are left-associative.
+$\s L,\s R$ represent left and right parentheses respectively.
 We define $\unparen(\xi,i)$ to mean that the $i$th character in $\xi$ is not within parentheses (this can be implemented easily: iterate backwards and count how many opening and closing parentheses there
 are.
 If there are more opening than closing, than it is inside parentheses.)
@@ -553,8 +554,8 @@ We now define the evaluator for expressions:
 \Function{eval}{$\xi$}
     \If{$\xi=\s x\in\s X$}
         \State\Return $\s x$
-    \ElseIf{$\xi[0]=$`('}
-        \State $\xi$ is of the form $(\rho)\xi'$
+    \ElseIf{$\xi[0]=\s L$}
+        \State $\xi$ is of the form $\s L\rho\s R\xi'$
         \State\Return $\eval(\eval(\rho)\xi')$
     \Else
         \Comment Find the greatest index with the smallest operator.\cr
@@ -568,15 +569,15 @@ We now define the evaluator for expressions:
 \EndFunc
 \ealgorithm
 
-For our beta reducer, our type term will be $\s X$, the atomic abstract terms will be $\s S,\Lparen,\Rparen$, and printable terms will be elements of $\s X\cup\s S$.
+For our beta reducer, our type term will be $\s X$, the atomic abstract terms will be $\s S,\s L,\s R$ ($\s L$ for left parentheses, $\s R$ for right), and printable terms will be elements of $\s X\cup\s S$.
 We will define the following initial beta reducer, we ignore states and printable term outputs because they are held constant:
 \blist
     \item $\s X\ \s S\longto\s S\s X\ \snd\ (u,f\to(u,f))$
     \item $\s S\s X\ \s S\s X \longto\s S\s X\ \snd\ ((u,f),(v,g)\to(f(u,v),g))$
     \item $\s S\s X\ \s X\longto\s X\ \snd\ ((u,f),v\to f(u,v))$
-    \item $\s X\ \Rparen \longto \Rparen\s X\ \snd\ (u,\_\to u)$
-    \item $\s S\s X\ \Rparen\s X \longto\Rparen\s X\ \snd\ ((u,f),v\to f(u,v))$
-    \item $\Lparen\ \Rparen\s X \longto\s X\ \snd\ (\_,u\to u)$
+    \item $\s X\ \s R \longto \s R\s X\ \snd\ (u,\_\to u)$
+    \item $\s S\s X\ \s R\s X \longto\s R\s X\ \snd\ ((u,f),v\to f(u,v))$
+    \item $\s L\ \s R\s X \longto\s X\ \fst\ (\_,u\to u)$
 \elist
 \noindent The initial state is self-explanatory.
 The initial priorities map $\s x\in\s X$ to $\infty$, $\s s\in\s S$ to $\pi(\s s)$, $($ to $\infty$, and $)$ to $0$.
@@ -586,8 +587,13 @@ Let $\beta^*$ be the total $\beta$-reducer: it iteratively applies $\beta$ until
 We also define $\beta_0$ and $\beta^*_0$ which include the rule that if $\xi$ is a single character $\sigma_n(u)$ then $\beta_0\xi=\sigma_0(u)$.
 We write $\xi\tos\xi'$ to mean that successive applications of $\beta_0$ lead from $\xi$ to $\xi'$.
 
+\subsection{Expressions without Parentheses}
+
+First we will prove this result for expressions without parentheses, i.e. those of the grammar
+$$ {\sl expr} \ccoloneqq \s X_\infty\gbar \s X_\infty\ \s S_n\ {\sl expr} $$
 Let us define the following set of {\it reduced expressions}, as a grammar including priorities:
 $$ {\sl rexpr} \ccoloneqq \s X_n\gbar \s S\s X_n\ {\sl rexpr}\gbar \s X_n\ \s S_m\ {\sl rexpr}\ (n\geq m) $$
+Note that ${\sl expr}\subseteq{\sl rexpr}$.
 Say that a string of internal terms $S$ is {\it closed under $\beta$-reductions} if for every string $\xi\in S$ with arbitrary priorities, $\beta\gen\xi\in S$.
 
 \lemm
@@ -625,8 +631,7 @@ This means that eventually the string will converge to a single token.
 Since ${\sl rexpr}$ is closed under $\beta_0$-reductions, this string must be in $\s X$.
 \qed
 
-Note that ${\sl expr}\subseteq{\sl rexpr}$ since ${\sl expr}\ccoloneqq\s X_\infty\gbar\s S_n\ \s X_\infty\ {\sl expr}$.
-So when $\beta$-reducing an expression, we will remain inside ${\sl rexpr}$.
+Since ${\sl expr}\subseteq{\sl rexpr}$, when $\beta$-reducing an expression, we will remain inside ${\sl rexpr}$.
 
 Notice that if $\xi\in{\sl rexpr}$ then $\beta^*\gen\xi$ cannot contain a substring of the form $\s X_n\ \s S_m$ since this can be reduced.
 And since by the above lemma, $\beta^*\gen\xi\in{\sl rexpr}$, we have $\beta^*\gen\xi=\s S\s X_{n_1}\s S\s X_{n_2}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$ with $n_1<\cdots<n_k<n_{k+1}$.
@@ -676,9 +681,9 @@ If $\xi=\s x_n$ then this is trivial.
 Otherwise let $n$ be the lowest priority of operator in $\xi$, so $\xi$ is of the form
 $$ \xi = \xi_1\s s_n^1\xi_2\s s_n^2\cdots\xi_k\s s_n^k\xi_{k+1} $$
 Now notice that
-$$ \xi \to \beta^*\gen{\xi_1\s s_n^1\xi_2\cdots\xi_k\s s_n^k}\xi_{k+1} $$
+$$ \xi \tos \beta^*\gen{\xi_1\s s_n^1\xi_2\cdots\xi_k\s s_n^k}\xi_{k+1} $$
 by lemma 4.0.2 this is equal to
-$$ \xi \to \s s_n^k[\beta^*_0\gen{\xi_1\s s_n^1\cdots\s s_n^{k-1}\xi_k}]\xi_{k+1} $$
+$$ \xi \tos \s s_n^k[\beta^*_0\gen{\xi_1\s s_n^1\cdots\s s_n^{k-1}\xi_k}]\xi_{k+1} $$
 and by lemma 4.0.3 reducing this gives
 $$ f_k\bigl(\beta^*_0\gen{\xi_1\s s^1_n\cdots\s s^k_n\xi_k},\beta^*_0\gen{\xi_{k+1}}\bigr) $$
 Continuing inductively on $k$, we get
@@ -688,6 +693,81 @@ $$ f_k\bigl(\cdots f_2(f_1(\eval(\xi_1),\eval(\xi_2)),\eval(\xi_3))\cdots,\eval(
 Now notice that
 $$ \eval(\xi) = f_k(\eval(\xi_1\s s_n^1\cdots\s s_n^{k-1}\xi_k),\eval(\xi_{k+1})) $$
 And continuing we get that this is equal to $(\bsres)$, as required.
+\qed
+
+\subsection{Expressions with Parentheses}
+
+\def\exprp{\begingroup\sl expr\endgroup_P}
+\def\rexprp{\begingroup\sl rexpr\endgroup_P}
+Our expressions will now be of the grammar
+$$ \exprp \ccoloneqq \s X_\infty\gbar \s X_\infty\ \s S_n\ \exprp\gbar \s L_\infty\ \exprp\ \s R_0 $$
+and {\it reduced expressions} will be
+$$ \rexprp \ccoloneqq \s X_n\gbar \s S\s X_n\ \rexprp\gbar \s X_n\ \s S_m\ \rexprp\ (n\geq m)\gbar \s L_\infty\ \rexprp\ \s R_0\gbar \s L_\infty\ (\s S\s X_n)^*\ \s R\s X_0 $$
+
+\lemm
+    $\rexprp$ is closed under $\beta$-reductions.
+\elemm
+
+\Proof we will prove the following stronger result:
+
+\centerline{Let $\xi\in\rexprp$ then $\beta\gen\xi\in\rexprp$ and $\beta^*\gen\xi=\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$ with $n_1<\cdots<n_{k+1}$.}
+\benum
+    \item For $\xi=\s X_n$ this is trivial.
+    \item For $\xi=\s S\s X_n\xi'$, if $\s S\s X_n$ can reduce with the first token of $\xi'$, so $\xi'=\s X_m$ or $\xi'=\s S\s X_m\xi''$, then we reduce and continue by induction.
+        Otherwise $\beta\gen\xi=\s S\s X_n\beta\gen{\xi'}$ which is inductively in $\rexprp$.
+        And if $\beta\gen{\xi'}$'s length is decreased, we induct.
+        Otherwise $\beta^*\gen{\xi'}=\xi'$ and so $\xi'=\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$, so we get that $\xi=\s S\s X_n\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$ which we already
+        know from the previous section converges to the desired form.
+    \item For $\xi=\s X_n\s S_m\xi'$, we have that $\beta\gen\xi=\s S\s X_m\xi'$ and so we induct.
+    \item For $\xi=\s L_\infty\xi'\s R_0$, since $\s L_\infty$ cannot reduce with the first character of $\xi'$ (as it is not $\s R\s X$), $\beta\gen\xi=\s L_\infty\beta\gen{\xi'\s R_0}$.
+        If $\xi'$ can be reduced, then this is just $\s L_\infty\beta\gen{\xi'}\s R_0$ and we induct.
+        Otherwise, $\xi'=\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$ with $n_1<\cdots<n_{k+1}$, and so this becomes $\s L_\infty\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s R\s X_0$, which is covered by the
+        final rule.
+    \item For $\xi=\s L_\infty\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s R\s X_0=\s L_\infty\xi'\s R\s X_0$, if $\xi'$ can be reduced then we simply induct.
+        Otherwise $n_1<\cdots<n_k$ and so a $\beta$-reduction gives $\s L_\infty\s S\s X_{n_1}\cdots\s S\s X_{n_{k-1}}\s R\s X_0$, and we induct.
+        The base is taken by $k=0$ in which case we get $\s L_\infty\s R\s X_0\to\s X_\infty$.
+        \qed
+\eenum
+
+From this lemma, since $\beta^*\gen\xi=\s S\s X_{n_1}\cdots\s S\s X_{n_k}\s X_{n_{k+1}}$, we get that $\beta^*_0\gen\xi\in\s X$.
+
+Further note from $(4)$ we can infer that $\s L_\infty\xi\s R_0\tos\s L_\infty\beta^*\gen\xi\s R_0$.
+From the proof of this lemma we have that $\beta^*\gen\xi=\s s_{n_1}^1[\s x^1]\cdots\s s_{n_k}^k[\s x^k]\s x_{n_{k+1}}^{k+1}$, and so we can see that
+$\s L_\infty\beta^*\gen\xi\s R_0\tos\beta^*_0\gen\xi_\infty$.
+Thus we have proven the following lemma:
+
+\lemm
+    Let $\xi\in\rexprp$, then $\beta^*\gen{\s L_\infty\xi\s R_0}=\beta^*_0\gen\xi_\infty$.
+\elemm
+
+\lemm
+    Let $\xi\in\rexprp$ and $n\leq\pi(\xi)$, then $\beta^*\gen{\xi\s s_n}=s_n[\beta^*_0\gen\xi]$.
+\elemm
+
+\Proof we know that
+$$ \xi\s s_n \tos \beta^*\gen\xi\s s_n = \s s^1_{n_1}[\s x^1]\cdots\s s^k_{n_k}[\s x^k]\s x_{n_{k+1}}^{k+1}\s s_n $$
+and so this just reduces to the same lemma as for expressions without parentheses.
+\qed
+
+\lemm
+    Let $\xi\in\rexprp$ and $n<\pi(\xi)$, then $\beta^*_0\gen{\s s_n[\s x]\xi}=f_{\s s}(\s x,\beta^*_0\gen\xi)$.
+\elemm
+
+\Proof this too, reduces to the same proof as for expressions without parentheses.
+\qed
+
+\thrm
+    For $\xi\in\exprp$, $\eval(\xi)=\beta^*_0\gen\xi$.
+\ethrm
+
+\Proof We induct on the length of $\xi$.
+If $\xi=\s x$ this is trivial.
+If $\xi=\s L_\infty\rho\s R_0\xi'$ for $\rho\in\exprp$ and so
+$$ \xi\tos\beta^*\gen{\s L_\infty\rho\s R_0}\xi' = \beta^*_0\gen\rho_\infty\xi' = \eval(\rho)\xi' $$
+where the final equality is due to induction.
+Then inductively, we have that $\beta^*_0\gen\xi=\beta^*_0\gen{\eval(\rho)\xi'}=\eval(\eval(\rho)\xi')$, which is just $\eval(\s L\rho\s R\xi')=\eval(\xi)$.
+And finally if $n$ is the lowest operator priority in $\xi$, then $\xi=\xi_1\s s_n^1\xi_2\cdots\xi_k\s s_n^k\xi_{k+1}$, this just reduces to the same proof for expressions without parentheses by the above
+two lemmas.
 \qed
 
 \bye
