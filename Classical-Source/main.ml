@@ -54,7 +54,7 @@ let main =
        exit 1
 *)
 let main =
-  let lexbuf = Lexing.from_channel stdin in
+  let lexbuf = Lexing.from_channel (open_in Sys.argv.(1)) in
   let res =
     try Parser.main Lexer.token lexbuf
     with
@@ -66,5 +66,5 @@ let main =
        fprintf stderr "Parse error at line %d:\n" lexbuf.lex_curr_p.pos_lnum;
        exit 1
   in
-    Ast.pprint_expr res |> print_endline;
+    (*Ast.pprint_expr res |> print_endline;*)
     Interpreter.eval_expr res (fun x -> raise (Invalid_argument (x ^ " does not exist on stack")));
