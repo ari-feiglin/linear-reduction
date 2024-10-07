@@ -4,7 +4,7 @@ import sys
 import time
 
 num_exes = 5
-exe_nums = [i for i in range(2,26,3)]
+exe_nums = [i for i in range(2,6)]
 
 exes = ["../llang", "../llang-classical"]
 names = ["Our Algorithm", "Classical Algorithm"]
@@ -15,28 +15,17 @@ for e in range(len(exes)):
     times = []
     for n in exe_nums:
         print(f"Run {n}")
-        code = f"""
-        fun fib (x) {{
-            if (x < 2) {{
-                1
-            }}{{
-                (fib (x-1)) + (fib (x-2))
-            }}
-        }}
-        let x = (fib {n});
-        _prim_print x
-        """
-        with open("fib.ml", "w") as f:
-            f.write(code)
+        os.system(f"python3 ../Demos/create-expression.py {n} {n}")
         start = time.time()
         for i in range(num_exes):
-            os.system(f"{exes[e]} fib.ml y")
+            os.system(f"{exes[e]} expression.txt y")
         end = time.time()
         times.append(end - start)
-    with open("fib-res.txt", "a") as f:
+    with open("expr-res.txt", "a") as f:
         f.write(f"{names[e]}: {' '.join([str(f) for f in times])}")
     plt.plot(exe_nums, times, label=names[e])
 
 plt.legend()
 plt.show()
+
 
