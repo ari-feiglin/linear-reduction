@@ -142,3 +142,37 @@ Furthermore, the tool we used for parsing, Menhir, has minor optimizations to ma
 This is not to say that Menhir is always quicker; there may exist a class of programs which are parsed quicker by our algorithm.
 Furthermore, with time we believe that optimizations may be found for our algorithm to make it at least competitive with the classical algorithms.
 
+## Notes
+
+The interpreter in `Classical-Source/` (`llang-classical`) does not support all the functionalities the one in `Source/` (`llang`) does.
+It does not support lists, products, or types.
+
+### Function Applications
+
+`llang-classical` does not support repeated function applications like `f a b` (i.e. in the case `f a` returns a function).
+This is because the grammar that `llang-classical` uses the following fragment:
+```
+value -> const | id | funcall
+funcall -> value value
+```
+This means that the value `f a b` can be parsed as
+```
+        value
+          |
+       funcall
+      /       \
+    value    value
+      |        |
+     id     funcall
+      |    /       \
+      f  value    value
+           |        |
+          id       id
+           |        |
+           a        b
+```
+And so it is in interpreted as `f (a b)` instead of `(f a) b`.
+As far as we are aware, this is unavoidable.
+As such, the demos in `Demos/` are all written in a `llang-classical`-friendly manner.
+But our algorithm handles this case with ease.
+
