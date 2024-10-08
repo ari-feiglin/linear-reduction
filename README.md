@@ -8,10 +8,8 @@ method with an existing algorithm.
 We intend to show that our algorithm works, by providing both a formal proof of a fragment of it as well as
 running example programs using it.
 
-We use our algorithm to implement an interpreter for a toy language in OCaml, and we provide two alternative
-methods for interpreting this language:
-1. a fully functional interpreter implemented in OCaml using [Menhir](https://gallium.inria.fr/~fpottier/menhir/)
-2. a program which transforms code known ahead of time into OCaml which can then be interpreted by OCaml itself.
+We use our algorithm to implement an interpreter for a toy language in OCaml, and we provide an alternative
+methods for interpreting this language: a fully functional interpreter implemented in OCaml using [Menhir](https://gallium.inria.fr/~fpottier/menhir/).
 
 ## Downloading and Building
 
