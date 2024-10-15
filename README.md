@@ -9,7 +9,13 @@ We intend to show that our algorithm works, by providing both a formal proof of 
 running example programs using it.
 
 We use our algorithm to implement an interpreter for a toy language in OCaml, and we provide an alternative
-methods for interpreting this language: a fully functional interpreter implemented in OCaml using [Menhir](https://gallium.inria.fr/~fpottier/menhir/).
+method for interpreting this language: a fully functional interpreter implemented in OCaml using [Menhir](https://gallium.inria.fr/~fpottier/menhir/).
+
+## Theoretical Documentation
+
+We provide documentation on how our algorithm works in `Docs/linear-reduction.pdf`.
+This includes a formal proof that (a fragment of) our algorithm works, as well as details about the construction
+of our toy language (L-Lang).
 
 ## Downloading and Building
 
@@ -26,8 +32,8 @@ cd linear-reduction
 ```
 All subsequent commands are done relative to this directory.
 
-Now to continue building, you must compile the source for our implementations of our and the clasical
-algorithms.
+Now to continue building, you must compile the source for our implementations for our algorithm and
+the clasical algorithm.
 
 ### Linear Reduction Implementation
 
