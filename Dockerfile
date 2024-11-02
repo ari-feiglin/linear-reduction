@@ -15,7 +15,6 @@ RUN eval $(opam env) && dune --version && menhir --version
 
 RUN chmod -R 777 /app/Source
 RUN chmod -R 777 /app/Classical-Source
-RUN chmod +x /app/run-script.sh
 
 # Install OCaml dependencies if you have them, like with `opam`
 RUN eval $(opam env) && opam install . --deps-only -y
