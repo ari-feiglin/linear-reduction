@@ -1,0 +1,21 @@
+(menhir
+  (modules parser))
+
+(ocamllex
+  (modules lexer))
+
+(executable
+ (name main))
+
+;(rule
+; (alias menhir)
+; (action (run menhir
+;              --executable
+;              lexer.mll
+;              parser.mly
+;              interpreter.ml
+;              main.ml)))
+(env
+  (dev
+    (flags (:standard -w -A))))
+

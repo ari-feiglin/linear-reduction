@@ -32,8 +32,20 @@ cd linear-reduction
 ```
 All subsequent commands are done relative to this directory.
 
-Now to continue building, you must compile the source for our implementations for our algorithm and
-the clasical algorithm.
+Now you can use Docker to run the programs in a container, or you can compile both implementations (ours and the classical) yourself and run them locally.
+
+### Running With Docker
+
+Build the Docker image:
+```sh
+docker build -t linear-reduction .
+```
+And run it in a container:
+```sh
+docker run -it linear-reduction:latest
+```
+You can then navigate around the container and run the programs.
+The binaries (`llang` and `llang-classical`) are already compiled for you, so you can skip the next two sections to the section on running.
 
 ### Linear Reduction Implementation
 
