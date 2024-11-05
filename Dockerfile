@@ -24,4 +24,5 @@ WORKDIR /app/Source
 RUN eval $(opam env) && make
 WORKDIR /app/Classical-Source
 RUN eval $(opam env) && make
+WORKDIR /app
 
