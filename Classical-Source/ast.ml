@@ -83,9 +83,9 @@ let rec pprint_expr expr =
     | ENone -> "None"
     | ELet ((v,_),value,e) -> "ELet(" ^ v ^ ", " ^ pprint_value value ^ ", " ^ pprint_expr e ^ ")"
     | EFun (i,_,e1,e2) -> "EFun(" ^ i ^ ", " ^ pprint_expr e1 ^ ", " ^ pprint_expr e2 ^ ")"
-    | EIf (v,et,ef,e) -> "EIf(" ^ ", " ^ pprint_expr et ^ ", " ^ pprint_expr ef ^ ", " ^ pprint_expr e ^ ")"
+    | EIf (_,et,ef,e) -> "EIf(" ^ ", " ^ pprint_expr et ^ ", " ^ pprint_expr ef ^ ", " ^ pprint_expr e ^ ")"
     | EApp (v1, v2, e) -> "EApp(" ^ pprint_value v1 ^ ", " ^ pprint_value v2 ^ ", " ^ pprint_expr e ^ ")"
     | EValue v -> "EValue(" ^ pprint_value v ^ ")"
-    | EPrim (p, v, e) -> "EPrim(" ^ p ^ ", " ^ pprint_value v ^ ")"
+    | EPrim (p, v, _) -> "EPrim(" ^ p ^ ", " ^ pprint_value v ^ ")"
 ;;
 

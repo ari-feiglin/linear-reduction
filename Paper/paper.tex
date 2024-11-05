@@ -3,8 +3,10 @@
 %\usepackage[margin=1in]{geometry}
 \usepackage{amsmath, amssymb, mathtools}
 \usepackage{enumitem}
-\usepackage{hyperref}
 \usepackage{float}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
 
 \def\labelitemi{$\bullet$}
 \def\labelenumi{(\textbf{\arabic{enumi}})}
@@ -578,15 +580,14 @@ Operators are assumed to be left-associative.
 Let us define $\unparen(\xi,i)$ to mean that the $i$th character in $\xi$ is not within parentheses (this can be implemented easily).
 We define the \eval{} algorithm (see algorithm \ref{alg:eval}) to evaluate strings in ${\it expr}$.
 
-\begin{algo}\label{alg:eval}
-\caption{\eval uating arithmetical expressions}
+\begin{algo}
 \algorithm
 \Function{eval}{$\xi$}
     \If{$\xi=\s x\in\s X$}
         \State\Return $\s x$
     \ElseIf{$\xi[0]=\s L$}
-        \State $\xi$ is of the form $\s L\rho\s R\xi'$
-        \State\Return $\eval(\eval(\rho)\xi')$
+        \State $\xi$ is of the form $\s L\xi'\s R\zeta$
+        \State\Return $\eval(\eval(\xi')\zeta)$
     \Else
         \Comment Find the greatest index with the smallest operator.\cr
         Note that $\max_i{\rm argmin}_if(i)$ is the maximal $i$ which minimizes $f$.\EndComment
@@ -598,6 +599,8 @@ We define the \eval{} algorithm (see algorithm \ref{alg:eval}) to evaluate strin
     \EndIf
 \EndFunc
 \ealgorithm
+\caption{\eval uating arithmetical expressions}
+\label{alg:eval}
 \end{algo}
 
 As opposed to pure valued (stateless) reduction, we will adopt some conventions from stateful reduction.
@@ -803,6 +806,114 @@ So $\beta^*(\xi)$ is of the form
     \end{enumerate}
 
 \end{proof}
+
+\section{Comparing Implementations}
+
+In this section we will comapre the runtimes of both implementations (one using linear reduction and one using menhir\NEEDCITE{}).
+A few notes beforehand:
+\begin{itemize}
+    \item The linear reduction implementation has more features than the menhir implementation, this should not severely impact the comparisons and we will of course not be comparing the implementations
+            on code which the menhir implementation does not support.
+    \item LLang supports left composition.
+            Meaning code of the form \ttt{f x y} is read as \ttt{(f x) y}.
+            We found no way of supporting this with menhir.
+            This is because our grammar for the menhir implementation contains the following fragment:
+            \[ {\it value} \ccoloneqq {\it const}\gbar{\it ident}\gbar{\it funcall},\qquad {\it funcall}\ccoloneqq{\it value}\ {\it value} \]
+            So \ttt{f x y} can be parsed as \ttt{f (x y)} instead:
+
+            \centerline{\begin{tikzpicture}[
+                    level 1/.style = {sibling distance=10em},
+                    level 2/.style = {sibling distance=10em},
+                    level 3/.style = {sibling distance=10em},
+                    level 4/.style = {sibling distance=10em},
+                    level 5/.style = {sibling distance=10em},
+                    level 6/.style = {sibling distance=10em},
+                    ]
+                \node {\it value}
+                    child {node {\it funcall}
+                        child {node {\it value}
+                            child {node {\it ident}
+                                child {node {\ttt f}}
+                            }
+                        }
+                        child {node {\it value}
+                            child {node {\it funcall}
+                                child {node {\it value}
+                                    child {node {\it ident}
+                                        child {node {\ttt x}}
+                                    }
+                                }
+                            }
+                            child {node {\it funcall}
+                                child {node {\it value}
+                                    child {node {\it ident}
+                                        child {node {\ttt y}}
+                                    }
+                                }
+                            }
+                        }
+                    };
+            \end{tikzpicture}
+            }
+\end{itemize}
+
+\subsection{Currying}
+
+We begin with a simple program to demonstrate currying.
+Currying is the action of taking a function $f\colon X\times Y\longto Z$ and converting it to a function $c(f)\colon X\longto(Y\longto Z)$ where $c(f)(x)\colon y\mapsto f(x,y)$.
+Our LLang code is as follows:
+
+\lstinputlisting[language=Caml, frame=single]{../Demos/currying.ml}
+
+Comparing the time it takes both implementations to run this 300 times, we see that it takes linear reduction 0.0040886 seconds, opposed to the classical implementation which takes 0.0036926 seconds.
+
+\subsection{Arithmetical Expressions}
+
+We can generate random arithmetical expressions using the following algorithm:
+
+\medskip
+\algorithm
+\Comment Create an expression with $\ell$ subterms, with a parentheses depth of $d$,\cr where numbers are chosen from $[0,n)$.\EndComment
+\Function{Generate-Expression}{$\ell,d,n$}
+    \lIf{$d=0$} \vtop{\hsize=.8\hsize
+        \noindent \Return an expression with $\ell$ randomly chosen numbers in\hfil\break $[0,n)$ and $\ell-1$ random operators in $\set{+,-,\times,\div}$.}
+    \State \Return $\bigl(\hbox{\tencsc Generate-Expression}(\ell,d-1,n)\bigr)\circ_1\cdots\circ_{\ell-1}$
+    \nonum\State \hfill$\bigl(\hbox{\tencsc Generate-Expression}(\ell,d-1,n)\bigr)$
+    \nonum\State where $\circ_i\in\set{+,-,\times,\div}$ are chosen randomly
+\EndFunc
+\ealgorithm
+\medskip
+
+\noindent We then run LLang code of the form \ttt{let x = <expr>;} where \ttt{<expr>} is generated by the above algorithm.
+We measure how long it takes to run this code five times with expressions generated by $\hbox{\tencsc Generate-Expression}(n,n,100)$ as $n$ varies.
+Doing so produces the following graph in figure \ref{fig:expr}.
+
+\begin{figure}
+
+    \centerline{\includegraphics[width=\hsize]{../Docs/Images/expr.png}}
+    \caption{Time to compute $\hbox{\tencsc Generate-Expression}(n,n)$}
+    \label{fig:expr}
+
+\end{figure}
+
+\subsection{Fibonacci}
+
+The fibonacci sequence is a linear recurrence defined by $F_n=F_{n-1}+F_{n-2}$ for $n>1$ and $F_1=F_0=1$.
+We wrote a script to compute the $n$th fibonacci number recursively in LLang:
+
+\begin{lstlisting}[language=Caml, frame=single]
+fun fib (x) {
+    if (x < 2) {
+        1
+    }{
+        (fib (x-1)) + (fib (x-2))
+    }
+}
+let x = (fib n);
+_prim_print x
+\end{lstlisting}
+
+
 
 \end{document}
 
