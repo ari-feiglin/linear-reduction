@@ -20,7 +20,8 @@ for e in range(len(exes)):
             if (x < 2) {{
                 1
             }}{{
-                (fib (x-1)) + (fib (x-2))
+                let y = (fib (x-1)) + (fib (x-2));
+                y
             }}
         }}
         let x = (fib {n});
@@ -38,5 +39,6 @@ for e in range(len(exes)):
     plt.plot(exe_nums, times, label=names[e])
 
 plt.legend()
-plt.show()
+print("Saving image to fib.png")
+plt.savefig("fib.png")
 

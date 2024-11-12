@@ -24,4 +24,6 @@ fig = plt.figure(figsize = (10, 5))
 plt.bar(exe_names, times, color="red")
 for i in range(len(exes)):
     print(f"{exe_names[i]}: {times[i] / num_exes}")
-plt.show()
+
+print("Saving image to comparer.png")
+plt.savefig("comparer.png")

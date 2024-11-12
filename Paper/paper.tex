@@ -807,6 +807,47 @@ So $\beta^*(\xi)$ is of the form
 
 \end{proof}
 
+\section{Producing Parse Trees}
+
+Linear reduction can be used to just parse, instead of parsing and interpreting simultaneously.
+This has its benefits, as separating parsing and interpretation allows for the inspection of code before running it, which can help alert the programmer to syntax errors.
+Furthermore, this means linear reduction can be used in the classical interpreter and compiler pipeline, as it can be used as a parser.
+
+To do so, we define $\tree$, the set of trees, as follows:
+\[ \tree \ccoloneqq \Sigma \gbar \Sigma(\tree) \gbar \Sigma(\tree)(\tree) \gbar \Sigma(\tree)(\tree)(\tree) \gbar \cdots \]
+So a tree is simply a multi-branched tree whose nodes are elements of our alphabet $\Sigma$.
+Then we define an \textit{initial $\beta$-reducer} as
+\[ \hb\colon \Sigma\times\Sigma \partial \Sigma \times (\bbZ\times\bbZ\to\bbZ) \times (\tree\times\tree\to\tree) \]
+This extends to a \textit{derived $\beta$-reducer}
+\[ \beta\colon (\oS\times\tree)^* \longto (\oS\times\tree)^* \]
+where $\beta(\xi)$ is defined as
+\begin{enumerate}
+    \item If $\xi=\sigma^1_n(t)\sigma^2_m(s)\xi'$ where $n\geq m$ and $\hb(\sigma^1,\sigma^2)=(\tau,\rho,f)$ is defined then $\beta(\xi)=\tau_{\rho(n,m)}(f(t,s))\xi'$.
+    \item Otherwise $\beta(\xi)=\sigma^1_n(t)\beta(\sigma^2_m(s)\xi')$.
+\end{enumerate}
+We can also add the case that if $\xi$ is a single token then $\beta(\xi)=\xi_0$.
+
+For example, for arithmetic we can define
+\blist
+    \item $\NUM\ \OP\to\OP\NUM,\snd,(t,f\mapsto f(t))$
+    \item $\OP\NUM\ \NUM\to \NUM,\snd,(f(t),s\mapsto f(t)(s))$
+    \item $\OP\NUM\ \OP\NUM\to \OP\NUM,\snd,\bigl(f(t),g(s)\mapsto g(f(t)(s))\bigr)$
+    \item $\NUM\ \RPAREN\to \RPAREN\NUM,\snd,(t,\_\mapsto t)$
+    \item $\OP\NUM\ \RPAREN\NUM\to \RPAREN\NUM,\snd,(f(t),s\mapsto f(t)(s))$
+    \item $\LPAREN\ \RPAREN\NUM\to \NUM,\fst,(\_,t\mapsto t)$
+\elist
+
+So for example, \ttt{1 + 2 * (3 + 4)} is then parsed as
+\begin{align*}
+    \mb1_\infty \mb+_1 \mb2_\infty \mb*_2 \mb(_\infty \mb3_\infty \mb+_1 \mb4_\infty \mb)_0 &\to^* \mb{+(1)}_1 \mb{*(2)}_2 \mb(_\infty \mb{+(3)}_1 \mb{4}_0\\
+    &\to \mb{+(1)}_1 \mb{*(2)}_2 \mb(_\infty \mb{+(3)(4)}_0\\
+    &\to \mb{+(1)}_1 \mb{*(2)}_2 \mb{+(3)(4)}_\infty\\
+    &\to^* \mb{+(1)}_1 \mb{*(2)(+(3)(4))}_0\\
+    &\to \mb{+(1)(*(2)(+(3)(4)))}_0
+\end{align*}
+\gobble)\gobble)
+
+
 \section{Comparing Implementations}
 
 In this section we will comapre the runtimes of both implementations (one using linear reduction and one using menhir\NEEDCITE{}).
@@ -929,7 +970,7 @@ _prim_print x
 
 Our implementation takes approximately $\sim ab^x$ seconds to run where $a=0.000138585, b=1.64685$, and the menhir-based interpreter takes $\sim ab^x$ seconds where $a=0.00000362553, b=1.5809$.
 
-\subsection{Conclusion}
+\section{Conclusion}
 
 We can see that linear reduction is significantly slower than the menhir-based interpreter.
 This can be for various reasons:
@@ -952,46 +993,6 @@ This can be for various reasons:
         Menhir does not naively parse code, it is an optimized tool.
         Thus comparing a naive implementation of linear reduction to menhir is not a fair comparison.
 \end{enumerate}
-
-\section{Producing Parse Trees}
-
-Linear reduction can be used to just parse, instead of parsing and interpreting simultaneously.
-This has its benefits, as separating parsing and interpretation allows for the inspection of code before running it, which can help alert the programmer to syntax errors.
-Furthermore, this means linear reduction can be used in the classical interpreter and compiler pipeline, as it can be used as a parser.
-
-To do so, we define $\tree$, the set of trees, as follows:
-\[ \tree \ccoloneqq \Sigma \gbar \Sigma(\tree) \gbar \Sigma(\tree)(\tree) \gbar \Sigma(\tree)(\tree)(\tree) \gbar \cdots \]
-So a tree is simply a multi-branched tree whose nodes are elements of our alphabet $\Sigma$.
-Then we define an \textit{initial $\beta$-reducer} as
-\[ \hb\colon \Sigma\times\Sigma \partial \Sigma \times (\bbZ\times\bbZ\to\bbZ) \times (\tree\times\tree\to\tree) \]
-This extends to a \textit{derived $\beta$-reducer}
-\[ \beta\colon (\oS\times\tree)^* \longto (\oS\times\tree)^* \]
-where $\beta(\xi)$ is defined as
-\begin{enumerate}
-    \item If $\xi=\sigma^1_n(t)\sigma^2_m(s)\xi'$ where $n\geq m$ and $\hb(\sigma^1,\sigma^2)=(\tau,\rho,f)$ is defined then $\beta(\xi)=\tau_{\rho(n,m)}(f(t,s))\xi'$.
-    \item Otherwise $\beta(\xi)=\sigma^1_n(t)\beta(\sigma^2_m(s)\xi')$.
-\end{enumerate}
-We can also add the case that if $\xi$ is a single token then $\beta(\xi)=\xi_0$.
-
-For example, for arithmetic we can define
-\blist
-    \item $\NUM\ \OP\to\OP\NUM,\snd,(t,f\mapsto f(t))$
-    \item $\OP\NUM\ \NUM\to \NUM,\snd,(f(t),s\mapsto f(t)(s))$
-    \item $\OP\NUM\ \OP\NUM\to \OP\NUM,\snd,\bigl(f(t),g(s)\mapsto g(f(t)(s))\bigr)$
-    \item $\NUM\ \RPAREN\to \RPAREN\NUM,\snd,(t,\_\mapsto t)$
-    \item $\OP\NUM\ \RPAREN\NUM\to \RPAREN\NUM,\snd,(f(t),s\mapsto f(t)(s))$
-    \item $\LPAREN\ \RPAREN\NUM\to \NUM,\fst,(\_,t\mapsto t)$
-\elist
-
-So for example, \ttt{1 + 2 * (3 + 4)} is then parsed as
-\begin{align*}
-    \mb1_\infty \mb+_1 \mb2_\infty \mb*_2 \mb(_\infty \mb3_\infty \mb+_1 \mb4_\infty \mb)_0 &\to^* \mb{+(1)}_1 \mb{*(2)}_2 \mb(_\infty \mb{+(3)}_1 \mb{4}_0\\
-    &\to \mb{+(1)}_1 \mb{*(2)}_2 \mb(_\infty \mb{+(3)(4)}_0\\
-    &\to \mb{+(1)}_1 \mb{*(2)}_2 \mb{+(3)(4)}_\infty\\
-    &\to^* \mb{+(1)}_1 \mb{*(2)(+(3)(4))}_0\\
-    &\to \mb{+(1)(*(2)(+(3)(4)))}_0
-\end{align*}
-\gobble)\gobble)
 
 \end{document}
 

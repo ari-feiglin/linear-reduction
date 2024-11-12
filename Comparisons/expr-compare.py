@@ -4,7 +4,7 @@ import sys
 import time
 
 num_exes = 5
-exe_nums = [i for i in range(2,6)]
+exe_nums = [i for i in range(2,60)]
 
 exes = ["../llang", "../llang-classical"]
 names = ["Our Algorithm", "Classical Algorithm"]
@@ -15,7 +15,7 @@ for e in range(len(exes)):
     times = []
     for n in exe_nums:
         print(f"Run {n}")
-        os.system(f"python3 ../Demos/create-expression.py {n} {n}")
+        os.system(f"python3 ../Demos/create-expression.py {n} {1}")
         start = time.time()
         for i in range(num_exes):
             os.system(f"{exes[e]} expression.txt y")
@@ -26,6 +26,6 @@ for e in range(len(exes)):
     plt.plot(exe_nums, times, label=names[e])
 
 plt.legend()
-plt.show()
-
+print("Saving image to expr.png")
+plt.savefig("expr.png")
 

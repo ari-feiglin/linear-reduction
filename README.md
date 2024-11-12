@@ -42,10 +42,18 @@ docker build -t linear-reduction .
 ```
 And run it in a container:
 ```sh
-docker run -it linear-reduction:latest
+docker run --name lr-container -it linear-reduction:latest
 ```
 You can then navigate around the container and run the programs.
 The binaries (`llang` and `llang-classical`) are already compiled for you, so you can skip the next two sections to the section on running.
+If you wish to exit the interactive shell, just run `exit`.
+To rerun, you must remove the container lr-container with
+```sh
+docker container rm lr-container
+```
+and run again.
+
+If you do use docker, please read the section on [viewing the results](#viewing-the-results).
 
 ### Linear Reduction Implementation
 
@@ -81,6 +89,9 @@ Note that a `make clean` command is provided as well.
 
 Demo files are provided in the `Demos/` directory.
 
+**Note:** the menhir-based interpreter does not support all of the files in this directory.
+It only supports the following: `arithmetic.ml`, `currying.ml`, `fib-rec.ml`.
+
 ### Linear Reduction Implementation
 
 To run our implementation of our algorithm, simply run `./llang <file path> [y]`.
@@ -104,7 +115,7 @@ To find the mean runtime of each algorithm on a set program specified by `<file 
 python3 comparer.py <file path>
 ```
 This will run the program 300 times with each interpreter, and present the results.
-It will print the mean runtimes (in seconds) as well as a bar graph representing the total time each interpreter ran.
+It will print the mean runtimes (in seconds) as well as creating a bar graph representing the total time each interpreter ran.
 
 For example,
 ```sh
@@ -149,7 +160,26 @@ python3 expr-compare.py
 and it will produce a plot of the times:
 ![](./Docs/Images/expr.png)
 
-### Conclusions
+## Viewing The Results
+
+### With Docker
+
+Docker does not seem to support use of interactive matplotlib plots, so all plots are saved to pngs in the docker container.
+After you run a comparer program, (one of `comparer.py`, `expr-compare.py`, `fib-compare.py`) a png will be created.
+The name of this png is printed (respectively, `comparer.png`, `expr.png`, `fib.png`).
+In another shell (or once you exit the interactive shell), you can run the command
+```sh
+docker cp lr-container:/app/Comparisons/<FILE NAME> <DESTINATION>
+```
+where `<FILE NAME>` is one of `comparer.py`, `expr-compare.py`, `fib-compare.py`, and `<DESTINATION>` is where you want the file to be copied to on your local host.
+You can then view this image file with any tool of your choosing (e.g. `wslview`, `xdg-open`, etc.).
+
+### Normally
+
+The images of the python comparison programs are written to .png files in the `Comparisons/` directory.
+Simply view them with any tool of your choice (e.g. `wslview`, `xdg-open`, etc.).
+
+## Conclusions
 
 As we can see, in each of the benchmark tests, the classical algorithm is quicker than ours.
 This is not surprising; the classical algorithm is, after all, a classic.

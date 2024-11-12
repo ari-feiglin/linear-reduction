@@ -3,6 +3,7 @@ FROM ocaml/opam:debian AS build
 
 # Set up the OPAM environment
 RUN opam init -y --disable-sandboxing && opam update
+RUN sudo apt-get update && sudo apt-get install -y python3 python3-pip
 
 # Set the working directory
 WORKDIR /app
@@ -12,6 +13,8 @@ COPY --chown=opam:opam . .
 
 RUN eval $(opam env) && opam install dune menhir --yes
 RUN eval $(opam env) && dune --version && menhir --version
+
+RUN pip3 install matplotlib --break-system-packages
 
 RUN chmod -R 777 /app/Source
 RUN chmod -R 777 /app/Classical-Source
