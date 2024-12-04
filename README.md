@@ -13,9 +13,17 @@ method for interpreting this language: a fully functional interpreter implemente
 
 ## Theoretical Documentation
 
-We provide documentation on how our algorithm works in `Docs/linear-reduction.pdf`.
+We provide documentation on how our algorithm works in `Paper/paper.pdf` (an older version can be found in `Docs/linear-reduction.pdf`).
 This includes a formal proof that (a fragment of) our algorithm works, as well as details about the construction
 of our toy language (L-Lang).
+
+To compile `Paper/paper.pdf` navigate to the `Paper/` directory and then run the following commands:
+```sh
+pdflatex paper
+biber paper
+pdflatex paper
+pdflatex paper
+```
 
 ## Downloading and Building
 
