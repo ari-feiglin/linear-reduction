@@ -1,5 +1,7 @@
-# Linear Reduction
+# Iterative Reduction
 *Ari Feiglin and Noam Kaplinski under the guidance of Dr. Yoni Zohar*
+
+> Note: previously this project was called "linear reduction".
 
 ## Introduction
 
@@ -13,7 +15,7 @@ method for interpreting this language: a fully functional interpreter implemente
 
 ## Theoretical Documentation
 
-We provide documentation on how our algorithm works in `Paper/paper.pdf` (an older version can be found in `Docs/linear-reduction.pdf`).
+We provide documentation on how our algorithm works in `Paper/paper.pdf` (an older version can be found in `Docs/iterative-reduction.pdf`).
 This includes a formal proof that (a fragment of) our algorithm works, as well as details about the construction
 of our toy language (L-Lang).
 
@@ -31,12 +33,12 @@ pdflatex paper
 
 Ensure you have git installed and run (in the desired directory)
 ```sh
-git clone https://github.com/ari-feiglin/linear-reduction
+git clone https://github.com/ari-feiglin/iterative-reduction
 ```
-This should clone all the source into a directory called `linear-reduction`.
+This should clone all the source into a directory called `iterative-reduction`.
 Now `cd` into this directory:
 ```sh
-cd linear-reduction
+cd iterative-reduction
 ```
 All subsequent commands are done relative to this directory.
 
@@ -46,14 +48,14 @@ Now you can use Docker to run the programs in a container, or you can compile bo
 
 Build the Docker image:
 ```sh
-docker build -t linear-reduction .
+docker build -t iterative-reduction .
 ```
 And run it in a container:
 ```sh
-docker run --name lr-container -it linear-reduction:latest
+docker run --name lr-container -it iterative-reduction:latest
 ```
 You can then navigate around the container and run the programs.
-The binaries (`llang` and `llang-classical`) are already compiled for you, so you can skip the next two sections to the section on running.
+The binaries (`ilang` and `ilang-classical`) are already compiled for you, so you can skip the next two sections to the section on running.
 If you wish to exit the interactive shell, just run `exit`.
 To rerun, you must remove the container lr-container with
 ```sh
@@ -63,9 +65,9 @@ and run again.
 
 If you do use docker, please read the section on [viewing the results](#viewing-the-results).
 
-### Linear Reduction Implementation
+### Iterative Reduction Implementation
 
-Navigate to the source for the implementation of linear reduction:
+Navigate to the source for the implementation of iterative reduction:
 ```sh
 cd Source
 ```
@@ -77,7 +79,7 @@ Run make
 ```sh
 make
 ```
-This will compile the source into an executable `llang` under the `linear-reduction` directory.
+This will compile the source into an executable `ilang` under the `iterative-reduction` directory.
 Note that a `make clean` command is provided as well.
 
 ### Classical Implementation
@@ -90,7 +92,7 @@ Run make
 ```sh
 make
 ```
-This will compile the source into an executable `llang-classical` under the `linear-reduction` directory.
+This will compile the source into an executable `ilang-classical` under the `iterative-reduction` directory.
 Note that a `make clean` command is provided as well.
 
 ## Running
@@ -100,15 +102,15 @@ Demo files are provided in the `Demos/` directory.
 **Note:** the menhir-based interpreter does not support all of the files in this directory.
 It only supports the following: `arithmetic.ml`, `currying.ml`, `fib-rec.ml`.
 
-### Linear Reduction Implementation
+### Iterative Reduction Implementation
 
-To run our implementation of our algorithm, simply run `./llang <file path> [y]`.
+To run our implementation of our algorithm, simply run `./ilang <file path> [y]`.
 This will execute the file specified by the path `<file path>`.
 Debugging information is printed unless `[y]` is specified.
 
 ### Classical Implementation
 
-To run our implementation of the classical algorithm, simply run `./llang-classical <file path>`.
+To run our implementation of the classical algorithm, simply run `./ilang-classical <file path>`.
 This will execute the file specified by the path `<file path>`.
 
 ## Comparisons
@@ -198,13 +200,13 @@ Furthermore, with time we believe that optimizations may be found for our algori
 
 ## Notes
 
-The interpreter in `Classical-Source/` (`llang-classical`) does not support all the functionalities the one in `Source/` (`llang`) does.
+The interpreter in `Classical-Source/` (`ilang-classical`) does not support all the functionalities the one in `Source/` (`ilang`) does.
 It does not support lists, products, or types.
 
 ### Function Applications
 
-`llang-classical` does not support repeated function applications like `f a b` (i.e. in the case `f a` returns a function).
-This is because the grammar that `llang-classical` uses the following fragment:
+`ilang-classical` does not support repeated function applications like `f a b` (i.e. in the case `f a` returns a function).
+This is because the grammar that `ilang-classical` uses the following fragment:
 ```
 value -> const | id | funcall
 funcall -> value value
@@ -227,6 +229,6 @@ This means that the value `f a b` can be parsed as
 ```
 And so it is in interpreted as `f (a b)` instead of `(f a) b`.
 As far as we are aware, this is unavoidable.
-As such, the demos in `Demos/` are all written in a `llang-classical`-friendly manner.
+As such, the demos in `Demos/` are all written in a `ilang-classical`-friendly manner.
 But our algorithm handles this case with ease.
 
