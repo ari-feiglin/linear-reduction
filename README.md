@@ -15,7 +15,7 @@ method for interpreting this language: a fully functional interpreter implemente
 
 ## Theoretical Documentation
 
-We provide documentation on how our algorithm works in `Paper/paper.pdf` (an older version can be found in `Docs/iterative-reduction.pdf`).
+We provide documentation on how our algorithm works in `Paper/paper.pdf` (an older version can be found in `Docs/linear-reduction.pdf`).
 This includes a formal proof that (a fragment of) our algorithm works, as well as details about the construction
 of our toy language (L-Lang).
 
@@ -33,12 +33,12 @@ pdflatex paper
 
 Ensure you have git installed and run (in the desired directory)
 ```sh
-git clone https://github.com/ari-feiglin/iterative-reduction
+git clone https://github.com/ari-feiglin/linear-reduction
 ```
-This should clone all the source into a directory called `iterative-reduction`.
+This should clone all the source into a directory called `linear-reduction`.
 Now `cd` into this directory:
 ```sh
-cd iterative-reduction
+cd linear-reduction
 ```
 All subsequent commands are done relative to this directory.
 
@@ -79,7 +79,7 @@ Run make
 ```sh
 make
 ```
-This will compile the source into an executable `ilang` under the `iterative-reduction` directory.
+This will compile the source into an executable `ilang` under the `linear-reduction` directory.
 Note that a `make clean` command is provided as well.
 
 ### Classical Implementation
@@ -92,7 +92,7 @@ Run make
 ```sh
 make
 ```
-This will compile the source into an executable `ilang-classical` under the `iterative-reduction` directory.
+This will compile the source into an executable `ilang-classical` under the `linear-reduction` directory.
 Note that a `make clean` command is provided as well.
 
 ## Running
