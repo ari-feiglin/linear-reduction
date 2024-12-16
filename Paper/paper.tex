@@ -317,12 +317,20 @@ We define the following four base sets:
     \item $\terma$ the set of \textit{abstract terms}; these are intermediate terms (like $\OP\NUM$ from the previous section).
 \end{enumerate}
 The sets $\termp,\terms,\terma$ are disjoint, and we place no such restriction on $\values$.
+\yoni{The comment about no restrictions for $\values$ is unclear.}
 
 While we don't need to place any further restrictions on $\termp,\terms,\terma$, we found it useful to explicitly construct them.
 To construct $\terms$, we begin with a set of \textit{base types} $\Sigma$.
 Each base type has an associated arity in $\bbN$; let $\Sigma^n$ denote the set of all base types of arity $n$.
 Then we define $\terms$ as follows:
 \[ \terms \ccoloneqq \Sigma^0 \mid \Sigma^1\terms \mid \Sigma^2\terms\terms \mid \Sigma^3\terms\terms\terms \mid \cdots \mid \Sigma^\oo(\terms\cdots\terms) \]
+
+\yoni{I don't think this is very standard. Perhaps you can define
+ it inductively: Every element of $\Sigma^0$ is in $T_{\Sigma}$,
+  and for eac $n$, if $t_i\in T_{\Sigma}$ for each $1\leq i \leq n$
+  then $f t_1 \ldots t_n \in T_{\Sigma}$ for each $f\in\Sigma^{n}$,
+  and then for each $g\in\Sigma^{\infty}$ and any $n$, similarly...
+Do we actually need $\Sigma^{\infty}$ BTW? }
 
 To construct $\terma$ we start with $\mathcal A$, a set of \textit{atomic abstract terms}, again each with an arity in $\bbN$.
 $\mathcal A^n$ is the set of atomic abstract terms of a set arity $n$.
@@ -331,25 +339,46 @@ Then $\terma$ is defined by
 \mathcal A^\infty\terms^\epsilon\cdots\terms^\epsilon \]
 Here we allow inputs to atomic abstract terms to be empty (i.e. $\terms^\epsilon$ instead of just $\terms$).
 
-So if $\Sigma=\set{\NUM_0,\LIST_1,\PRODUCT_\infty}$ (the subscripts are the arities of each base type) and $\mathcal A=\set{\OP}$, then
+\begin{example}
+If $\Sigma^{0}=\{\NUM\}$,
+$\Sigma^{1}=\{\LIST\}$, and $\Sigma^{\infty}=\{\PRODUCT\}$
+and $\Sigma=\Sigma^0\cup\Sigma^1\cup\Sigma^\infty$,
+ and $\mathcal A=\set{\OP}$, 
+\yoni{plz specify the "arity" of $\OP$.}
+ then
 \[ \NUM,\LIST\NUM,\PRODUCT(\LIST\NUM\NUM)\in\terms,\qquad \OP\LIST\NUM\in\terma \]
-For readability we can put parentheses and commas where necessary, but importantly these sets have the \textit{unique reconstruction property}: it is possible to compute their construction from the
+\yoni{I think it is better to put a space between these, especially
+in $\LIST\NUM\NUM$.}
+\end{example}
+For readability we can put parentheses and commas where necessary, but importantly these sets have the \textit{unique reconstruction property}:
+\yoni{If I understand correctly you are assuming this property, right? If so, please say so.}
+it is possible to compute their construction from the
 string itself (i.e. a string cannot be constructed from two different patterns).
 
 Now we define the following sets:
 \begin{enumerate}
-    \item $\term=\termp\cup\terms\cup\terms$, the set of \textit{terms},
+    \item $\term=\termp\cup\terms\cup\terms$, 
+\yoni{Should the last $\terms$ be $\terma$?}
+    the set of \textit{terms},
     \item $\termi=\terms\cup\terma$, the set of \textit{internal terms},
     \item $\expi=\termi\times\values$, the set of \textit{internal expressions},
     \item $\exp=\termi\cup\termp$, the set of \textit{expressions}.
 \end{enumerate}
 Finally we define $\oe=\exp\times\bbZ$.
-Elements of $\oe$ will be written like $\sigma_n(v)$ as before; for printable terms we act as if the value is empty.
+Elements of $\oe$ will be written like $\sigma_n(v)$ as before; 
+\yoni{But elements of $\oe$ seems like pairs to me, not triplets.}
+for printable terms we act as if the value is empty.
+\yoni{Please clarify what does acting as if... means.}
 
 The \textit{initial priority function} is a function $\pi\colon\termp\longto\bbZ$.
 This can be naturally extended to $\pi\colon\termp^*\longto\oe^*$.
+\yoni{please show how.}
 
 Finally, our \textit{initial $\beta$-reducer} is a function ($\state$ is a set of functions $\termp\partial\expi$ which we define later)
+\yoni{Using something and defining it later should be avoided...}
+
+\yoni{Generally, this section is hard to follow. I suggest adding plenty of examples, after every new definition / concept, please add an appropriate small example.}
+
 \[ \hb\colon\termi\times\term^\epsilon \partial \termi^\epsilon\times(\bbZ\times\bbZ\to\bbZ)\times(\values\times\values\times\state\partial\values\times\termp^*\times\state) \]
 and we extend this to a \textit{derived $\beta$-reducer}, a function
 \[ \beta\colon\oe^*\times\state \partial \oe^*\times\state \]
