@@ -7,9 +7,6 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{graphicx}
-\usepackage[backend=biber]{biblatex}
-
-\addbibresource{paper-bib.bib}
 
 \def\labelitemi{$\bullet$}
 \def\labelenumi{(\textbf{\arabic{enumi}})}
@@ -1036,9 +1033,10 @@ This can be for various reasons:
         Thus comparing a naive implementation of iterative reduction to menhir is not a fair comparison.
 \end{enumerate}
 
-\bigskip
 
-\printbibliography
+\bibliographystyle{abbrv}
+\bibliography{paper-bib}
+
 
 \end{document}
 
