@@ -245,9 +245,14 @@ Here we abstract away the value of each term; the value of the new term given by
 Our alphabet of types $\Sigma$, instead of having a token for every number, will just have tokens for types (number, operator, etc.).
 We also have another set $\values$, the \textit{universe of values}.
 
+\yoni{I would consider using the word "kinds" instead of "types". "kinds" is not great either, but types are stuff like int, real, int->int, which i am not sure is appropriate here.}
+
+
 The initial $\beta$-reducer is a function
 \[ \hb \colon \Sigma\times\Sigma \partial \Sigma\times(\bbZ\times\bbZ\to\bbZ)\times(\values\times\values\partial\values) \]
-Our alphabet of types is $\Sigma=\set{\NUM,\OP,\LPAREN,\RPAREN,\OP\NUM,\RPAREN\NUM}$, define $\oP=\oS\times\values$ to be the set of all possible terms (a term consists of a type, a priority, and a value).
+Define $\oP=\oS\times\values$ to be the set of all possible terms,
+that is, 
+a term consists of a type, a priority, and a value.
 Since terms now consist of three parts, we write them as $\sigma_p(v)$, where $\sigma$ is the type; $p$ is the priority; and $v$ the value.
 
 Our rules for the derived $\beta$-reducer are similar to before: it is a function $\beta\colon\oP^* \partial \oP^*$ where for $\xi=\sigma^1_{p_1}(v_1)\cdots\sigma^n_{p_n}(v_n)$
@@ -258,6 +263,9 @@ Our rules for the derived $\beta$-reducer are similar to before: it is a functio
     \item otherwise $\beta(\xi)=\sigma^1_{p_1}(v_1)\beta(\sigma^2_{p_2}(v_2)\cdots\sigma^n_{p_n}(v_n))$.
 \end{enumerate}
 
+
+\begin{example}
+Define $\Sigma=\set{\NUM,\OP,\LPAREN,\RPAREN,\OP\NUM,\RPAREN\NUM}$.
 Our initial $\beta$-reducer will is defined as follows:
 \begin{itemize}
     \item $\hb(\NUM,\OP)=(\OP\NUM,\snd,(v,f\mapsto(v,f))$
@@ -268,9 +276,20 @@ Our initial $\beta$-reducer will is defined as follows:
     \item $\hb(\LPAREN,\RPAREN\NUM)=(\NUM,\fst,(\_,v\mapsto v))$
 \end{itemize}
 
+\yoni{I don't really understand it. For example, what is 
+$(v,f\mapsto(v,f))$? Perhaps introducing some more definitions
+and details can help clarify?
+}
+\yoni{What happened to the squares around the tokens in this example?}
+
+
+
 So taking our previous example of \ttt{2*(1+3)+4}: we first must convert it into tokens acceptable for $\beta$-reduction (via lexing).
 So it is converted to
 \[ \NUM_\infty(2)\ \OP_2(*)\ \LPAREN_\infty\ \NUM_\infty(1)\ \OP_1(+)\ \NUM_\infty(3)\ \RPAREN_0\ \OP_1(+)\ \NUM_\infty(4) \]
+
+\yoni{Here we are missing a formal assignment of priorities.}
+
 The derivation is then
 \begin{gather*}
     \OP\NUM_2(2,*)\ \LPAREN_\infty\ \NUM_\infty(1)\ \OP_1(+)\ \NUM_\infty(3)\ \RPAREN_0\ \OP_1(+)\ \NUM_\infty(4) \\
@@ -284,6 +303,7 @@ The derivation is then
     \NUM_0(12)
 \end{gather*}
 
+\end{example}
 But this of course is not capable of handling the semantics necessary for programming languages.
 We need a notion of a state, and a somewhat more refined algorithm.
 
