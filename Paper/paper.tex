@@ -8,6 +8,7 @@
 \usepackage{listings}
 \usepackage{graphicx}
 \usepackage{mdframed}
+\usepackage{cleveref}
 
 \def\labelitemi{$\bullet$}
 \def\labelenumi{(\textbf{\arabic{enumi}})}
@@ -122,7 +123,7 @@ which is the correct result.
 \section{The Algorithm}
 
 \subsection{A First Attempt -- Primitive Reduction}
-
+\label{sec:firstattempt}
 We can formalize the algorithm given in the introduction as follows: we start with an alphabet of tokens $\Sigma$.
 Define $\oS=\Sigma\times\bbN$, and we assume the existence of a so-called \textit{initial $\beta$-reducer}:
 $\hb\colon \Sigma\times\Sigma \longto \Sigma$, which is defined by the implementer of the language being interpreted, and is the function which
@@ -136,28 +137,49 @@ Suppose $\xi=\sigma^1_{p_1}\cdots\sigma^n_{p_n}$, then $\beta(\xi)$ is defined r
     \item otherwise $\beta(\xi)=\sigma^1_{p_1}\,\beta(\sigma^2_{p_2}\cdots\sigma^n_{p_n})$.
 \end{enumerate}
 
-Notice that since in our reduction we get pairs of tokens in the form $\mbt{x,*},\mbt{y,+}$, we need to add extra rules to handle these cases.
-Specifically here we have $\hb(\mbt{x,*},\mbt{y,+})=\mbt{x*y,+}$.
+% Notice that since in our reduction we get pairs of tokens in the form $\mbt{x,*},\mbt{y,+}$, we need to add extra rules to handle these cases.
+% Specifically here we have $\hb(\mbt{x,*},\mbt{y,+})=\mbt{x*y,+}$.
 
-So let us define $\Sigma$ to consist of tokens of the form $\mbt{x}$ for numbers $\ttt x$, $\mb\circ$ for operator symbols $\circ$ (addition,
-multiplication, etc.), and $\mbt{x,$\circ$}$.
-Then we define the initial $\beta$-reducer by
+
+\begin{example}
+Define $\Sigma$ to consist of tokens of the form $\mbt{x}$ 
+for every $x\in\mathbb{N}$, 
+$\mb\circ$ for $\circ\in\{+,*\}$, and $\mbt{x,$\circ$}$
+for every $x\in\mathbb{N}$
+and $\circ\in\{+,*\}$.
+
+Then we define the initial $\beta$-reducer $\hb$ by
 \begin{enumerate}
-    \item $\hb(\mbt x,\mb\circ)=\mbt{x,$\circ$}$ for operator symbols $\circ$,
-    \item $\hb(\mbt{x,$\circ$},\mbt y)=\mbt{x$\circ$y}$,
-    \item $\hb(\mbt{x,$\circ$},\mbt{y,$\bullet$})=\mbt{x$\circ$y,$\bullet$}$,
-    \item and any other inputs can be given an arbitrary output.
+    \item $\hb(\mbt x,\mb\circ)=\mbt{x,$\circ$}$ for $\circ\in\{+,*\}$
+    \item $\hb(\mbt{x,$\circ$},\mbt y)=\mbt{x$\circ$y}$ for 
+    $x,y\in\mathbb{N}$ and $\circ\in\{+,*\}$
+    \item $\hb(\mbt{x,$\circ$},\mbt{y,$\bullet$})=\mbt{x$\circ$y,$\bullet$}$ 
+    for $x,y\in\mathbb{N}$ and $\circ,\bullet\in\{+,*\}$
+    \item $\hb$ is defined arbitrarily on any other input.
 \end{enumerate}
-So for example we can now handle expressions of the form
+
+Now, consider the expression $1*2+3$. 
+After assigning priorities, we obtain
+the following expression:
+\yoni{The last sentence is an example of how the assignment
+of priorities feels a bit out of context here. This could improve
+if they become a formal part of the framework, from the very beginning.}
+$\mbt1_\infty \mbt*_2 \mbt2_\infty \mbt+_1 \mbt3_\infty$.
+We now get:
 \begin{multline*}
     \mbt1_\infty \mbt*_2 \mbt2_\infty \mbt+_1 \mbt3_\infty \to \mbt{1,*}_2 \mbt2_\infty \mbt+_1 \mbt3_\infty \to \mbt{1,*}_2 \mbt{2,+}_1 \mbt3_\infty \to \mbt{2,+}_1 \mbt3_\infty\\
     \to \mbt{2,+}_1 \mbt3_0 \to \mbt5_0
 \end{multline*}
+\end{example}
 
 But this has a major issue: it can't handle things like parentheses.
 We could of course handle parentheses by changing how we assign priorities: every time we see an open parentheses we could increase
 the priority of each token and then beta-reduce.
-But this complicates how we allocate priorities, and does not generalize well.
+But this complicates how we allocate priorities, 
+\yoni{would u say that currently we can set priorities statically, but with
+the idea of increasing priorities we would have to set them dynamically?
+If so, I would mention that.}
+and does not generalize well.
 Furthermore the notion introduced in the next section, partial reduction, generalizes well and is used as a basepoint in the
 remainder of this paper.
 
@@ -177,8 +199,7 @@ Now we define the derived $\beta$-reducer as follows; it is a function $\beta\co
     \item otherwise $\beta(\xi)=\sigma^1_{p_1}\,\beta(\sigma^2_{p_2}\cdots\sigma^n_{p_n})$.
 \end{enumerate}
 
-We define our alphabet $\Sigma$ to be the same as in the previous section.
-
+We define our alphabet $\Sigma$ to be the same as in~\Cref{sec:firstattempt}.
 Now we define our initial $\beta$-reducer which will support parentheses.
 It is an extension of our previous $\beta$-reducer:
 \begin{gather*}
