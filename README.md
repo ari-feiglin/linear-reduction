@@ -19,13 +19,11 @@ We provide documentation on how our algorithm works in `Paper/paper.pdf` (an old
 This includes a formal proof that (a fragment of) our algorithm works, as well as details about the construction
 of our toy language (L-Lang).
 
-To compile `Paper/paper.pdf` navigate to the `Paper/` directory and then run the following commands:
+To compile `Paper/paper.pdf` navigate to the `Paper/` directory and then run make:
 ```sh
-pdflatex paper
-biber paper
-pdflatex paper
-pdflatex paper
+make
 ```
+We also provide `make clean` to clean auxillary files.
 
 ## Downloading and Building
 
