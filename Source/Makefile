@@ -1,5 +1,5 @@
 CC := ocamlopt
-EXE_NAME := ../llang
+EXE_NAME := ../ilang
 SOURCES := lexer.ml reducer.ml main.ml
 
 all:

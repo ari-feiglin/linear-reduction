@@ -63,35 +63,10 @@ and run again.
 
 If you do use docker, please read the section on [viewing the results](#viewing-the-results).
 
-### Iterative Reduction Implementation
+### Compiling
 
-Navigate to the source for the implementation of iterative reduction:
-```sh
-cd Source
-```
-Set up the opam environment
-```sh
-eval $(opam env)
-```
-Run make
-```sh
-make
-```
-This will compile the source into an executable `ilang` under the `linear-reduction` directory.
-Note that a `make clean` command is provided as well.
-
-### Classical Implementation
-
-Navigate to the source for the classical implementation:
-```sh
-cd Classical-Source
-```
-Run make
-```sh
-make
-```
-This will compile the source into an executable `ilang-classical` under the `linear-reduction` directory.
-Note that a `make clean` command is provided as well.
+Simply run `make` in the main directory.
+This will create three executables: `ilang`, `ilang-opt`, and `ilang-classical`.
 
 ## Running
 
@@ -102,7 +77,7 @@ It only supports the following: `arithmetic.ml`, `currying.ml`, `fib-rec.ml`.
 
 ### Iterative Reduction Implementation
 
-To run our implementation of our algorithm, simply run `./ilang <file path> [y]`.
+To run our implementation of our algorithm, simply run `./ilang <file path> [y]` or `./ilang-opt <file path> [y]`.
 This will execute the file specified by the path `<file path>`.
 Debugging information is printed unless `[y]` is specified.
 

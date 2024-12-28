@@ -1018,6 +1018,133 @@ So for example, \ttt{1 + 2 * (3 + 4)} is then parsed as
 \end{align*}
 \gobble)\gobble)
 
+\section{Optimizing the Algorithm}
+
+Iterative reduction is an $\Theta(n^2)$-time algorithm under the assumption that every reduction reduces the number of tokens by one: (which is the case in the language provided), and no reduction yields a string of printable terms (e.g. when creating parse trees).
+This is because a string of the form $\s s^1_1\s s^2_2\cdots\s s^n_n$ will take $n$ applications of the $\beta$-reducer, each application taking $n-k$ iterations (since $\beta$ is recursive).
+
+But we can make this more efficient; indeed, iterative reduction can be made into a $\Theta(n)$-time algorithm.
+Currently, the implementation of iterative reduction is as follows (assuming the existence of $\hb$):
+
+\def\bhelp{\hbox{\tencsc$\hb$-helper}}
+\begin{algo}[h]
+\algorithm
+    \Function{$\beta$-helper}{$\xi,\bar s$}
+        \State $\xi = \sigma^1_n(u)\sigma^2_m(v)\xi'$
+        \lIf{$\sigma^1\in\termp$} \Return $\gen{\bar s(\sigma^1)_n\sigma^2_m(v)\xi'}[\bar s']$
+        \If{$\hb(\sigma^1,\epsilon)=(\tau,\rho,f)$ is defined}
+            \State $(w,\zeta,\bar s')\gets f(u,\_,\bar s)$
+            \State $\gen{\xi''}[\bar s'']\gets\beta^*\gen{\pi(\zeta)}[\bar s']$
+            \State $n'\gets \rho(n,\_)$
+            \State\Return $\gen{\tau_{n'}(w)\xi''\xi'}[\bar s'']$
+        \ElseIf{$n\geq m$ and $\hb(\sigma^1,\sigma^2)=(\tau,\rho,f)$ is defined}
+            \State $(w,\zeta,\bar s')\gets f(u,v,\bar s)$
+            \State $\gen{\xi''}[\bar s'']\gets\beta^*\gen{\pi(\zeta)}[\bar s']$
+            \State $n'\gets \rho(n,m)$
+            \State\Return $\gen{\tau_{n'}(w)\xi''\xi'}[\bar s'']$
+        \Else
+            \State\Return undefined
+        \EndIf
+    \EndFunc
+    \nonum\State
+    \Function{$\beta$}{$\xi,\bar s$}
+        \If{$\xi=\epsilon$} \Return $\gen\xi[\bar s]$
+        \ElseIf{$\bhelp\gen\xi[\bar s]=\gen{\xi'}[\bar s']$ is defined}
+            \Return $\gen{\xi'}[\bar s']$
+        \Else
+            \State $\xi=\sigma_n(u)\xi'$
+            \State $\gen{\xi''}[\bar s']\gets\beta\gen{\xi'}[\bar s]$
+            \State\Return $\gen{\sigma_n(u)\xi''}[\bar s']$
+        \EndIf
+    \EndFunc
+    \nonum\State
+    \Function{$\beta^*$}{$\xi,\bar s$}
+        \State $\gen{\xi'}[\bar s']\gets\beta\gen\xi[\bar s]$
+        \If{$\xi==\xi'$} \Return $\gen\xi[\bar s]$
+        \Else\ \Return $\beta^*\gen{\xi'}[\bar s']$
+        \EndIf
+    \EndFunc
+\ealgorithm
+\end{algo}
+
+All \bhelp{} does is check if $\hb$ can be applied to the current token(s), it cannot be optimized in a significant manner.
+What we will optimize is the manner in which we apply $\beta$.
+We can think of our algorithm as having a pointer to the current token in the stream.
+If \bhelp{} can be applied at this pointer, then we alter the stream accordingly, and move the pointer to the beginning, and
+repeat.
+
+But notice that if we have a stream of tokens $\s s^1\cdots\s s^k\cdots\s s^n$ (the current token is $\s s^k$), and we can apply \bhelp{}, we get $\s s^1\cdots\s s^{k-1}\s t\cdots\s s^n$.
+Now, the fact that the pointer was at $\s s^k$ means that it could not have reduced any of the tokens $\s s^1,\dots,\s s^{k-1}$.
+So going back to the beginning will waste time: we don't need to check indices $1,\dots,k-2$.
+Instead what we will do is move the pointer back one (as now it is possible that $\s s^{k-1}$ and $\s t$ can be reduced).
+
+And if $\hb$ cannot be applied at the current pointer, we increment the pointer to the next token (since this is the final rule
+in iterative reduction).
+
+\begin{algo}
+\algorithm
+    \Function{$\hb^*$}{$\xi,\bar s$}
+        \If{$\xi=\epsilon$} \Return $(\gen\xi[\bar s],\bot)$
+        \ElseIf{$\bhelp\gen\xi[\bar s]=\gen{\xi'}[\bar s']$ is defined} \Return $(\gen{\xi'}[\bar s'],\top)$
+        \Else
+            \State $\xi=\sigma^1_n(u)\xi'$
+            \State $(\gen{\xi''}[\bar s'],\s X)\gets\hb^*\gen{\xi'}[\bar s]$
+            \lIf{$\s X$} \Return $\hb^*\gen{\sigma^1_n(u)\xi''}[\bar s']$
+            \lElse \Return $(\gen{\sigma^1_n(u)}[\bar s'],\bot)$
+        \EndIf
+    \EndFunc
+    \nonum\State
+    \Function{$\beta^*$}{$\xi,\bar s$}
+        \State $(\gen{\xi'}[\bar s'],\s X)\gets\hb^*\gen\xi[\bar s]$
+        \lIf{$\s X$} \Return $\beta^*\gen{\xi'}[\bar s']$
+        \lElse \Return $\gen{\xi'}[\bar s']$
+    \EndFunc
+\ealgorithm
+\end{algo}
+
+The algorithm was explained intuitively above, we now focus on how this implementation is faithful to the explanation.
+Firstly, $\beta^*$ calls $\hb^*$, and $\hb^*$ checks if $\bhelp$ can be applied at the current pointer.
+If it can, then it applies it and returns (essentially moving the pointer back one).
+It also returns $\top$, meaning it successfully applied a reduction.
+
+If it cannot apply $\bhelp$, then it moves forward one and applies $\hb^*$.
+Now, if this returns $\bot$, this means that no reductions we performed.
+This means that all we know is that the next reduction is before the current token, so we have to go back to the start.
+Thus we continue returning $\bot$ to the end.
+If it returned $\top$, then there was a reduction performed at the subsequent token, so we try to continue reducing at the current
+token (since we know we cannot reduce previous tokens).
+
+\begin{theorem}
+
+    Assuming $\hb$ is $O(1)$, no reductions produce a stream of printable tokens (as is the case with creating parse trees), and
+    every application of $\hb$ reduces the number of tokens by one, then this algorithm is $O(n)$.
+
+\end{theorem}
+
+\begin{proof}
+
+    Without loss of generality, we will assume that we always reduce a single token (i.e. we never perform
+    $\hb(\sigma^1,\sigma^2)$, instead always performing $\hb(\sigma^1,\epsilon)$).
+    And we will ignore states, since their change does not affect time complexity (since $\hb$ is $O(1)$).
+
+    We will alter our algorithm slightly: for every token $\sigma$, define $\#\sigma=2$.
+    Now, when we call $\hb^*(\sigma^1\cdots\sigma^n)$, we decrement $\#\sigma^1$ by $1$.
+    If $\hb(\sigma^1,\epsilon)$ is defined, then we increment $\#\sigma^0$ by $1$ ($\sigma^0$ is the token
+    before $\sigma^1$, or $\sigma^2$ if $\sigma^1$ was the first token).
+
+    We claim that $\sigma$ can only be reduced if $\#\sigma=1$, and this means that $\#\xi=\sum_{\sigma\in\xi}\#\sigma$ is
+    decremented by $1$ at each call to $\hb^*$ and never incremented.
+    Thus if we can also show that $\#\sigma$ is always non-negative, then we have shown that we call $\hb^*$ at most $2n$ times,
+    and so the algorithm takes $O(n)$ time.
+
+    Notice that if we go passed $\sigma$, then it will only be revisited if the subsequent token is reduced.
+    Suppose that the subsequent token is not reduced, then we only work backward if the algorithm reaches the end of the string,
+    but then $\hb^*$ will return $\bot$, and it will not be called again.
+    This means that if $\#\sigma=1$ and $\sigma$ is not reduced, then $\#\sigma$ can never become $0$ since it is revisited only if
+    the next token is reduced, which would increment $\#\sigma$ by $1$.
+    \qed
+
+\end{proof}
 
 \section{Comparing Implementations}
 
@@ -1077,7 +1204,15 @@ Our ILang code is as follows:
 
 \lstinputlisting[language=Caml, frame=single]{../Demos/currying.ml}
 
-Comparing the time it takes both implementations to run this 300 times, we see that it takes iterative reduction 0.0040886 seconds, opposed to the classical implementation which takes 0.0036926 seconds.
+Comparing the time it takes both implementations to run this 300 times, we see that it takes iterative reduction (unoptimized) 0.001055 seconds, optimized iterative reduction 0.000998 seconds, and the classical implementation (menhir) 0.000866 seconds.
+
+\begin{figure}
+
+    \centerline{\includegraphics[width=\hsize]{../Docs/Images/comparer.png}}
+    \caption{Time to compute \ttt{currying.ml}}
+    \label{fig:curry}
+
+\end{figure}
 
 \subsection{Arithmetical Expressions}
 
@@ -1102,11 +1237,11 @@ expressions generated by $\hbox{\tencsc Generate-Expression}(n,1,100)$ as $n$ va
 
 \begin{figure}
 
-    \centerline{\includegraphics[width=\hsize]{../Docs/Images/expr.png}}
+    \centerline{\includegraphics[width=\hsize]{../Docs/Images/expr-n-n.png}}
     \caption{Time to compute $\hbox{\tencsc Generate-Expression}(n,n)$}
     \label{fig:expr1}
     \medskip
-    \centerline{\includegraphics[width=\hsize]{../Docs/Images/expr1.png}}
+    \centerline{\includegraphics[width=\hsize]{../Docs/Images/expr-n-1.png}}
     \caption{Time to compute $\hbox{\tencsc Generate-Expression}(n,1)$}
     \label{fig:expr2}
 
@@ -1133,7 +1268,7 @@ _prim_print x
 
 \begin{figure}
 
-    \centerline{\includegraphics[width=\hsize]{../Docs/Images/expr.png}}
+    \centerline{\includegraphics[width=\hsize]{../Docs/Images/fib.png}}
     \caption{Time to compute $\hbox{\tt fib}(x)$}
     \label{fig:fib}
 
@@ -1146,11 +1281,6 @@ Our implementation takes approximately $\sim ab^x$ seconds to run where $a=0.000
 We can see that iterative reduction is significantly slower than the menhir-based interpreter.
 This can be for various reasons:
 \begin{enumerate}
-    \item Iterative reduction is an $O(n^2)$-time algorithm (when no reduction produces a string of printable tokens, and every reduction reduces two tokens to one).
-        This is because a string of the form $\s s^1_1\s s^2_2\cdots\s s^n_n$ will take $n$ applications of the $\beta$-reducer, each application taking $n-k$ iterations (since $\beta$ is recursive).
-        This can be made more efficient: instead of starting the next $\beta$-reduction at the beginning of a string, it can be started at the token before the one just reduced.
-        Meaning once $\s s^{n-1}$ and $\s s^n$ are reduced to give $\s x^{n-1}$, we can begin the next iteration of the $\beta$-reducer at $\s s^{n-2}\s x^{n-1}$.
-        Unfortunately, implementing this did not lead to substantial increases in efficiency.
 
     \item When handling function calls, iterative reduction simply re-reduces the string in the definition of the function.
         This requires it to parse and interpret the function again.
