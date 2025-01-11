@@ -26,12 +26,17 @@
 \def\@@gen#1{\left<#1\right>}
 \def\gen#1{\@ifnextchar[ {\@gen{#1}}{\@@gen{#1}}}
 \def\abs#1{\left|#1\right|}
+\def\parens#1{\left(#1\right)}
 
 \let\ttt=\texttt
 
 \def\fboxsep{.5pt}
-\def\mb#1{{}\mathop{\fbox{\vrule width0pt depth1.5pt height8pt$#1$}}\nolimits{}}
+\def\mb@#1#2{{}\mathop{\fbox{\vrule width0pt depth1.5pt height8pt$#1#2$}}\nolimits{}}
+\def\mb#1{\mathpalette\mb@{#1}}
 \def\mbt#1{{}\mathop{\fbox{\vrule width0pt depth1.5pt height8pt\ttt{#1}}}\nolimits{}}
+
+\def\mbox@#1#2{{\fbox{$#1#2$}}}
+\def\mbox#1{\mathpalette\mbox@{#1}}
 
 \def\fst{\mathsf{fst}}
 \def\snd{\mathsf{snd}}
@@ -229,4 +234,10 @@
         \par\medskip%
     \fi%
 }
+
+\def\BR{\hbox{\textbf{$\boldsymbol{\beta}$R}}}
+\def\MBR{\hbox{\textbf{M$\boldsymbol{\beta}$R}}}
+\def\REG {\hbox{\textbf{REG}}}
+\def\CFL {\hbox{\textbf{CFL}}}
+\def\DCFL{\hbox{\textbf{DCFL}}}
 
