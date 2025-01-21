@@ -44,12 +44,10 @@
 \end{abstract}
 
 \section{Introduction}
-\yoni{comment}
 Nowadays, most programming language interpreters follow the following pipeline (see \cite{dragon})
 \begin{enumerate}
     \item Lexing: lexically analyze the input code, separating it into atomic \textit{tokens}.
     \item Parsing: convert the parsed tokens into a \textit{parse tree}: a tree which represents the code according to the language's grammar.
-\yoni{comment}
     \item Interpreting: recursively descend the tree and execute the code according to the instructions embedded in the tree.
 \end{enumerate}
 For example, we can parse the following expression:
@@ -79,13 +77,12 @@ Unfortunately, constructing such a tree is not so easy.
 Multiple methods for doing so exist (some are listed in \cite{dragon}), as well as tools for automating this process.
 
 We propose a novel method for the process of interpretation, which doesn't use parse trees.
-But our algorithm is not limited to this, and can be altered to produce parse trees as well (see \S\ref{producing-parse-trees}).
+But our algorithm is not limited to this, and can be altered to produce parse trees as well (see $\S$\ref{producing-parse-trees}).
 This means that our algorithm can be utilized as part of the pipeline for compilers and traditional interpreters.
 
 The idea of the algorithm is as follows: the input is a stream of tokens, which are indivisible characters in any language.
 Given a string of tokens $\mb{\sigma^1}\cdots\mb{\sigma^n}$ (for readability, tokens are written in boxes), we form rules for combining two tokens.
 For example, $\mb{\ttt1}$ and $\mb{\ttt+}$ can be combined together to give a token $\mb{\ttt{1,+}}$.
-\yoni{comment}
 Then if we follow a token of the form $\mb{\ttt{x,+}}$ with a token of the form $\mb{\ttt y}$, the tokens are combined to form a token $\mb{\ttt{x+y}}$.
 So for example:
 \[ \mbt{1} \mbt{+} \mbt{2} \mbt{+} \mbt{3} \to \mbt{1,+} \mbt2 \mbt+ \mbt3 \to \mbt{3} \mbt+ \mbt3 \to \mbt{3,+} \mbt3 \to \mbt6 \]
