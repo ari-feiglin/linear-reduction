@@ -77,7 +77,9 @@ Unfortunately, constructing such a tree is not so easy.
 Multiple methods for doing so exist (some are listed in \cite{dragon}), as well as tools for automating this process.
 
 We propose a novel method for the process of interpretation, which doesn't use parse trees.
-But our algorithm is not limited to this, and can be altered to produce parse trees as well (see \S\ref{producing-parse-trees}).
+But our algorithm is not limited to this, and can be altered to produce parse trees as well (see 
+
+%%\S\ref{producing-parse-trees}).
 This means that our algorithm can be utilized as part of the pipeline for compilers and traditional interpreters.
 
 The idea of the algorithm is as follows: the input is a stream of tokens, which are indivisible characters in any language.
@@ -126,13 +128,15 @@ Define $\oS=\Sigma\times\bbN$, and we assume the existence of a so-called \texti
 $\hb\colon \Sigma\times\Sigma \longto \Sigma$, which is defined by the implementer of the language being interpreted, and is the function which
 tells us how to combine tokens together.
 We extend it to a \textit{derived $\beta$-reducer} which is a function $\beta\colon\oS^*\longto\oS^*$ as follows.
-
+\yoni{plz explicitly say that we use $a_b$ to denote $<a,b>$.}
 Suppose $\xi=\sigma^1_{p_1}\cdots\sigma^n_{p_n}$, then $\beta(\xi)$ is defined recursively as follows:
 \begin{enumerate}
     \item if $n=1$, then $\beta(\xi)=\sigma^n_0$,
     \item if $p_1\geq p_2$, then $\beta(\xi)=\hb(\sigma^1,\sigma^2)_{p_2}\sigma^3_{p_3}\cdots\sigma^n_{p_n}$,
     \item otherwise $\beta(\xi)=\sigma^1_{p_1}\,\beta(\sigma^2_{p_2}\cdots\sigma^n_{p_n})$.
 \end{enumerate}
+
+\yoni{I wonder how can this support ternary operators like if then else, integrals, or just custom-defined functions. Maybe like in functional programming, so that functions will also be values?}
 
 To assign priorities to an input stream of tokens, we assume the existence of a \textit{priority function} $\pi\colon\Sigma\partial\bbN$.
 We can then extend this to a function $\pi\colon\Sigma^*\longto\oS^*$ by $\pi(\sigma^1\cdots\sigma^n)=\sigma^1_{\rho_1}\cdots\sigma^n_{\rho_n}$ where $\rho_i=\pi(\sigma^i)$.
@@ -213,9 +217,6 @@ Now we define the derived $\beta$-reducer as follows; it is a function $\beta\co
     \end{gather*}
     \gobble) % syntax highlighting
     And we define our priority function as follows:
-    \yoni{feels out of context, the notion of a priority function
-    was not defined. Also, notice that some tokens get priorities and some don't, which is a bit confusing.}
-    \ari{Both points are now explained in the previous section, is this good?}
     \[ \pi(\mbt x) = \infty\hbox{ for numbers \ttt x},\quad \pi(\mbt+) = 1,\quad \pi(\mbt*) = 2,\quad \pi(\mbt() = \infty,\quad \pi(\mbt)) = 0 \]
     
     Now take for example \ttt{2*(1+3)+4}:
@@ -232,6 +233,8 @@ Now we define the derived $\beta$-reducer as follows; it is a function $\beta\co
     \end{align*}
     \gobble)\gobble)
 
+\yoni{It would be nice to really show what would have happened if we were to use the previous section's approach. The main difference, if i understand correctly, is that this would enforce $\hb(\mb (, \mb{x,)}$ to be $(x,snd)$ instead of $(x,fst)$, right? It would be cool to write out which term we would eventually get this way.}
+
 \end{example}
 
 Notice that our $\beta$-reducers don't care about the exact value of the number and operation: both $\mbt1\mbt+$ and $\mbt2\mbt*$ are mapped to something of the form $\mbt{x,$\circ$}$.
@@ -243,6 +246,7 @@ We do such in our third attempt.
 Here we abstract away the value of each term; the value of the new term given by the initial $\beta$-reducer will be determined by an output function.
 Our alphabet of tokens $\Sigma$, instead of having a token for every number, will just have tokens for types (number, operator, etc.).
 We also have another set $\values$, the \textit{universe of values}.
+\yoni{plz provide an example for what this universe typically looks like.}
 
 \yoni{I would consider using the word "kinds" instead of "types". "kinds" is not great either, but types are stuff like int, real, int->int, which i am not sure is appropriate here.}
 \ari{I understand this, I'm not such a fan of ``kinds'' but I guess using ``types'' isn't really faithful to its understanding in CS.
@@ -250,10 +254,15 @@ I'd like to maybe discuss this with you more when we meet.}
 
 The initial $\beta$-reducer is a function
 \[ \hb \colon \Sigma\times\Sigma \partial \Sigma\times(\bbZ\times\bbZ\to\bbZ)\times(\values\times\values\partial\values) \]
+
+\yoni{plz intuitively describe what it returns.}
+
 Define $\oP=\oS\times\values$ to be the set of all possible terms,
 that is, 
 a term consists of a type, a priority, and a value.
+\yoni{A term is a common word for something like an expression, separated from priority and type (which is here not really a type). So this naming is problematic.}
 Since terms now consist of three parts, we write them as $\sigma_p(v)$, where $\sigma$ is the type; $p$ is the priority; and $v$ the value.
+\yoni{Not sure about value either. Let's discuss. Value is typically a number, a string, a concrete function...}
 
 Our rules for the derived $\beta$-reducer are similar to before: it is a function $\beta\colon\oP^* \partial \oP^*$ where for $\xi=\sigma^1_{p_1}(v_1)\cdots\sigma^n_{p_n}(v_n)$
 \begin{enumerate}
@@ -267,24 +276,28 @@ Our rules for the derived $\beta$-reducer are similar to before: it is a functio
 \begin{example}
 
     Define $\Sigma=\set{\NUM,\OP,\LPAREN,\RPAREN,\OP\NUM,\RPAREN\NUM}$.
-    Our initial $\beta$-reducer will is defined as follows:
+    Our initial $\beta$-reducer is defined as follows:
     \begin{itemize}
         \item $\hb(\NUM,\OP)=(\OP\NUM,\snd,(v,f\mapsto(v,f))$
+\yoni{This is a bit strange. It suggests that $\values\times \values \subseteq \values$, which is impossible. We need to properly define the relevant set here, and the domain and range of this function.}
         \item $\hb(\OP\NUM,\NUM)=(\NUM,\snd,((v,f),u\mapsto f(v,u)))$
         \item $\hb(\OP\NUM,\OP\NUM)=(\OP\NUM,\snd,((v,f),(u,g)\mapsto (f(v,u),g))$
         \item $\hb(\NUM,\RPAREN)=(\RPAREN\NUM,\snd,(v,\_\mapsto v))$
         \item $\hb(\OP\NUM,\RPAREN\NUM)=(\RPAREN\NUM,\snd,((v,f),u\mapsto f(v,u)))$
         \item $\hb(\LPAREN,\RPAREN\NUM)=(\NUM,\fst,(\_,v\mapsto v))$
     \end{itemize}
+\yoni{Here would be a good place to show what is saved compared to the previous approach, maybe there are less lines or something?}
     In the first point $(v,f\mapsto(v,f))$ means that the function to compute the value of the new token is one which takes two values $v,f$ and outputs a new value which is the pair $(v,f)$.
     
     So taking our previous example of \ttt{2*(1+3)+4}: we first must convert it into tokens acceptable for $\beta$-reduction (via lexing).
     In this example allocating initial priorities is not so simple: the priorities depend not on the type of the token in $\Sigma$, but the token in the stream given to the lexer.
     So we will assume the lexer allocates priorities similar to the previous example in the previous section.
+    \yoni{better to use ref instead of "previous example".}
     This issue will be resolved in the next section.
     So the stream is converted to
     \[ \NUM_\infty(2)\ \OP_2(*)\ \LPAREN_\infty\ \NUM_\infty(1)\ \OP_1(+)\ \NUM_\infty(3)\ \RPAREN_0\ \OP_1(+)\ \NUM_\infty(4) \]
     We no longer need boxes to distinguish between tokens because the individual tokens and so we will no longer use them.
+    \yoni{"and so" sounds like it misses something before it.}
 
     The derivation is then
     \begin{gather*}
@@ -298,6 +311,7 @@ Our rules for the derived $\beta$-reducer are similar to before: it is a functio
         \OP\NUM_2(8,+)\ \NUM_0(4) \\
         \NUM_0(12)
     \end{gather*}
+\yoni{$\OP\NUM_2(2,*)$ should be $\OP\NUM_2((2,*))$ right?}
 
 \end{example}
 But this of course is not capable of handling the semantics necessary for programming languages.
@@ -370,10 +384,12 @@ This can be naturally extended to $\pi\colon\termp^*\longto\oe^*$ as before: $\p
 Finally, our \textit{initial $\beta$-reducer} is a function ($\state$ is a set of functions $\termp\partial\expi$ which we define later)
 \yoni{Using something and defining it later should be avoided...}
 \ari{We can move the definition up, but I felt like it messed with the flow.}
+\yoni{But also using something and defining it later messes the flow... We can probably find a way that is clear without jumps.}
 
 \yoni{Generally, this section is hard to follow. I suggest adding plenty of examples, after every new definition / concept, please add an appropriate small example.}
 \ari{I'm not really sure what kinds of examples to add; I added a big example at the end that we can potentially split up?
 But I feel like we need all of the definitions to give a good example.}
+\yoni{exactly -- the idea is to break the example to many small examples, so that each concept is clearer.}
 
 \[ \hb\colon\termi\times\term^\epsilon \partial \termi^\epsilon\times(\bbZ\times\bbZ\to\bbZ)\times(\values\times\values\times\state\partial\values\times\termp^*\times\state) \]
 and we extend this to a \textit{derived $\beta$-reducer}, a function
