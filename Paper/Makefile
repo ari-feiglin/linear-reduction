@@ -1,4 +1,5 @@
 all:
+	-pdflatex --interaction=nonstopmode paper
 	pdflatex paper
 	bibtex paper
 	pdflatex paper

@@ -17,6 +17,9 @@
 \def\oP{\overline\Pi}
 \def\hb{\widehat\beta}
 
+\def\kind{kind}
+\def\kinds{kinds}
+
 \let\oo=\infty
 
 \def\@set#1[#2]{\left\{\,#1\;\middle|\;#2\,\right\}}
@@ -31,7 +34,7 @@
 \let\ttt=\texttt
 
 \def\fboxsep{.5pt}
-\def\mb@#1#2{{}\mathop{\fbox{\vrule width0pt depth1.5pt height8pt$#1#2$}}\nolimits{}}
+\def\mb@#1#2{{}\mathop{\fbox{\vrule width0pt depth1.5pt height8pt$\tt#1#2$}}\nolimits{}}
 \def\mb#1{\mathpalette\mb@{#1}}
 \def\mbt#1{{}\mathop{\fbox{\vrule width0pt depth1.5pt height8pt\ttt{#1}}}\nolimits{}}
 
@@ -48,7 +51,7 @@
 \def\RPAREN{\mathsf{Rparen}}
 \def\LIST{\mathsf{List}}
 \def\PRODUCT{\mathsf{Product}}
-\def\COLON{\mathsf{Colon}}
+\def\SEMI{\mathsf{Semi}}
 \def\LBRACK{\mathsf{Lbrack}}
 \def\RBRACK{\mathsf{Rbrack}}
 

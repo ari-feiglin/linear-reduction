@@ -136,8 +136,6 @@ Then $\beta(\xi)$ is defined recursively as follows:
     \item otherwise $\beta(\xi)=\sigma^1_{p_1}\,\beta(\sigma^2_{p_2}\cdots\sigma^n_{p_n})$.
 \end{enumerate}
 
-\yoni{I wonder how can this support ternary operators like if then else, integrals, or just custom-defined functions. Maybe like in functional programming, so that functions will also be values?}
-
 To assign priorities to an input stream of tokens, we assume the existence of a \textit{priority function} $\pi\colon\Sigma\partial\bbN$.
 We can then extend this to a function $\pi\colon\Sigma^*\longto\oS^*$ by $\pi(\sigma^1\cdots\sigma^n)=\sigma^1_{\rho_1}\cdots\sigma^n_{\rho_n}$ where $\rho_i=\pi(\sigma^i)$.
 Notice that not every token is assigned an initial priority; such tokens thus cannot be in the initial input stream to the $\beta$-reduction.
@@ -233,7 +231,11 @@ Now we define the derived $\beta$-reducer as follows; it is a function $\beta\co
     \end{align*}
     \gobble)\gobble)
 
-\yoni{It would be nice to really show what would have happened if we were to use the previous section's approach. The main difference, if i understand correctly, is that this would enforce $\hb(\mb (, \mb{x,)}$ to be $(x,snd)$ instead of $(x,fst)$, right? It would be cool to write out which term we would eventually get this way.}
+    This example would not be possible using our previous section's approach to $\beta$-reduction, or at least it would be much less efficient.
+    This is because we'd have to define every possible reduction, in particular we'd have to be able to reduce $\mbt($ and $\mbt1$ (since they're both given an initial infinite priority).
+    We could of course do this, and our above example would work.
+    But what of examples like $(\cdots(1+1)\cdots)$?
+    We'd need to reduce an arbitrary number of parentheses.
 
 \end{example}
 
@@ -244,29 +246,24 @@ We do such in our third attempt.
 \subsection{A Third Attempt -- Valued Reduction} \label{valued-reduction}
 
 Here we abstract away the value of each term; the value of the new term given by the initial $\beta$-reducer will be determined by an output function.
-Our alphabet of tokens $\Sigma$, instead of having a token for every number, will just have tokens for types (number, operator, etc.).
+Our alphabet of tokens $\Sigma$, instead of having a token for every number, will just have tokens for \kinds{} (number, operator, etc.).
 We also have another set $\values$, the \textit{universe of values}.
 This could be, for example, a set consisting of all numbers, functions $\bb R\times\bb R\longto\bb R$, tuples of numbers, etc.
-
-\yoni{I would consider using the word "kinds" instead of "types". "kinds" is not great either, but types are stuff like int, real, int->int, which i am not sure is appropriate here.}
-\ari{I understand this, I'm not such a fan of ``kinds'' but I guess using ``types'' isn't really faithful to its understanding in CS.
-I'd like to maybe discuss this with you more when we meet.}
 
 The initial $\beta$-reducer is a function
 \[ \hb \colon \Sigma\times\Sigma \partial \Sigma\times(\bbZ\times\bbZ\to\bbZ)\times(\values\times\values\partial\values) \]
 That is, the initial $\beta$-reducer takes two types from $\Sigma$ and returns the following:
 \begin{enumerate}
-    \item a new type,
-    \item a function to determine the priority of the new type given the priorities of the original two types,
-    \item and a function to determine the value of the new type given the values of the original two types.
+    \item a new \kind,
+    \item a function to determine the priority of the new \kind{} given the priorities of the original two \kinds,
+    \item and a function to determine the value of the new \kind{} given the values of the original two \kinds.
 \end{enumerate}
 
 Define $\oP=\oS\times\values$ to be the set of all possible terms,
 that is, 
-a term consists of a type, a priority, and a value.
+a term consists of a \kind, a priority, and a value.
 \yoni{A term is a common word for something like an expression, separated from priority and type (which is here not really a type). So this naming is problematic.}
-Since terms now consist of three parts, we write them as $\sigma_p(v)$, where $\sigma$ is the type; $p$ is the priority; and $v$ the value.
-\yoni{Not sure about value either. Let's discuss. Value is typically a number, a string, a concrete function...}
+Since terms now consist of three parts, we write them as $\sigma_p(v)$, where $\sigma$ is the \kind; $p$ is the priority; and $v$ the value.
 
 Our rules for the derived $\beta$-reducer are similar to before: it is a function $\beta\colon\oP^* \partial \oP^*$ where for $\xi=\sigma^1_{p_1}(v_1)\cdots\sigma^n_{p_n}(v_n)$
 \begin{enumerate}
@@ -282,6 +279,7 @@ Our rules for the derived $\beta$-reducer are similar to before: it is a functio
     Define $\Sigma=\set{\NUM,\OP,\LPAREN,\RPAREN,\OP\NUM,\RPAREN\NUM}$.
     And we define our universe of values to consist of
     \begin{enumerate}
+        \item \emph{none}: a value which reflects that the token has no value,
         \item numbers ($\bb R$),
         \item binary operators (functions $\bb R\times\bb R\to\bb R$),
         \item pairs consisting of a number and a binary operator.
@@ -290,20 +288,16 @@ Our rules for the derived $\beta$-reducer are similar to before: it is a functio
     Our initial $\beta$-reducer is defined as follows:
     \begin{itemize}
         \item $\hb(\NUM,\OP)=(\OP\NUM,\snd,(v,f\mapsto(v,f))$ (here $v$ is a number, $f$ a binary operator, and the result is a pair),
-\yoni{This is a bit strange. It suggests that $\values\times \values \subseteq \values$, which is impossible. We need to properly define the relevant set here, and the domain and range of this function.}
-            \ari{In general this is not an issue, you could for example start with a set $S_0=S$, and define $S_{n+1}=S_n\cup(S_n\times S_n)$, then $\values=\bigcup_nS_n$ has this property.
-            I'm not saying this just to be technical, this is sort of how I imagined $\values$ being defined.
-            In any case, I provided a simpler definition for $\values$ above.}
         \item $\hb(\OP\NUM,\NUM)=(\NUM,\snd,((v,f),u\mapsto f(v,u)))$
         \item $\hb(\OP\NUM,\OP\NUM)=(\OP\NUM,\snd,((v,f),(u,g)\mapsto (f(v,u),g))$
         \item $\hb(\NUM,\RPAREN)=(\RPAREN\NUM,\snd,(v,\_\mapsto v))$
         \item $\hb(\OP\NUM,\RPAREN\NUM)=(\RPAREN\NUM,\snd,((v,f),u\mapsto f(v,u)))$
         \item $\hb(\LPAREN,\RPAREN\NUM)=(\NUM,\fst,(\_,v\mapsto v))$
     \end{itemize}
-\yoni{Here would be a good place to show what is saved compared to the previous approach, maybe there are less lines or something?}
+    In this approach, as opposed to the approach taken in the previous section, we simplify the reduction rules (especially when it comes to the rules regarding operations).
     
     So taking our previous example of \ttt{2*(1+3)+4}: we first must convert it into tokens acceptable for $\beta$-reduction (via lexing).
-    In this example allocating initial priorities is not so simple: the priorities depend not on the type of the token in $\Sigma$, but the token in the stream given to the lexer.
+    In this example allocating initial priorities is not so simple: the priorities depend not on the \kind{} of the token in $\Sigma$, but the token in the stream given to the lexer.
     So we will assume the lexer allocates priorities similar to example \ref{example:partial}.
     This issue will be resolved in the next section.
     So the stream is converted to
@@ -323,7 +317,8 @@ Our rules for the derived $\beta$-reducer are similar to before: it is a functio
         \OP\NUM_2(8,+)\ \NUM_0(4) \\
         \NUM_0(12)
     \end{gather*}
-\yoni{$\OP\NUM_2(2,*)$ should be $\OP\NUM_2((2,*))$ right?}
+    We remove parentheses for added readability when it leads to no confusion: for example we write $\OP\NUM_2(2,*)$ instead of $\OP\NUM_2((2,*))$.
+    And we don't write the value if it's \emph{none} (e.g. in the case of $\LPAREN_\infty$).
 
 \end{example}
 But this of course is not capable of handling the semantics necessary for programming languages.
@@ -331,7 +326,10 @@ We need a notion of a state, and a somewhat more refined algorithm.
 
 \subsection{A Fourth Attempt -- Stateful Reduction}
 
-We define the following four base sets:
+\subsubsection{Base Sets}
+
+We begin the description of stateful reduction by describing certain sets which must exist for the algorithm.
+We start with the following sets:
 \begin{enumerate}
     \item $\values$ the \textit{universe of values}; these are all the internal values an object may have.
     \item $\termp$ the set of \textit{printable terms}; this is the set of all printable tokens a programmer may type.
@@ -339,7 +337,6 @@ We define the following four base sets:
     \item $\terma$ the set of \textit{abstract terms}; these are intermediate terms (like $\OP\NUM$ from the previous section).
 \end{enumerate}
 The sets $\termp,\terms,\terma$ must be disjoint, and we place no such restriction on $\values$ (it can include elements from $\termp,\terms,\terma$).
-\yoni{The comment about no restrictions for $\values$ is unclear.}
 
 While we don't need to place any further restrictions on $\termp,\terms,\terma$, we found it useful to explicitly construct them.
 To construct $\terms$, we begin with a set of \textit{base types} $\Sigma$.
@@ -390,19 +387,68 @@ Finally we define $\oe=\exp\times\bbZ$.
 Elements of $\oe$ will be written like $\sigma_n(v)$ as before: $\sigma$ is the term (printable or internal), $n$ the priority, and $v$ the value.
 In the case that $\sigma$ is a printable term, we still use this notation even though the value does not exist: so we just take it to be empty.
 
-The \textit{initial priority function} is a function $\pi\colon\termp\longto\bbZ$.
+\subsubsection{States}
+
+We begin by defining \textit{point-states} to be partial maps $\termp\partial\expi$.
+If $s_1,s_2$ are two point-states then we define their composition to be
+\[ s_1s_2(\sigma) = \begin{cases} s_2(\sigma) & \sigma\in\dom s_2\\ s_1(\sigma) & \sigma\in\dom s_1-\dom s_2\end{cases} \]
+Point-states with finite domain will be denoted by $[\sigma_i\mapsto\varkappa_i]_{i=1}^n$ where $\sigma_1,\dots,\sigma_n$ is the domain and $\varkappa_1,\dots,\varkappa_n$ are their respective images.
+The empty point-state (with the empty domain) will be denoted by $\varnothing$.
+
+A \textit{state} will be a pair of a sequence of point-states and a set of indices.
+This will be denoted by $\bar s=[(s_1,\dots,s_n),\;I=(i_1,\dots,i_k)]$ (we require that $k\leq n$).
+The set of indices represent the \emph{closures} of the state: every function call will push a new point-state and index to the state.
+This way if a function returns another function, it can look at its current closure and return it as well, which would allow the returned function to reference variables in its parent's scope.
+
+We define
+\begin{enumerate}
+    \item $\bar s+s=\bigl[(s_1,\dots,s_n,s),\;I\bigr]$, for $s$ a point-state,
+    \item $\bar s+_cs=\bigl[(s_1,\dots,s_n,s),\;(i_1,\dots,i_k,n+1)\bigr]$, for $s$ a point-state,
+    \item $\pop\bar s=\bigl[(s_1,\dots,s_{n-1}),\;I\bigr]$ if $i_k<n$, otherwise it is defined to be equal to $\bigl[(s_1,\dots,s_{n-1}),\;(i_1,\dots,i_{k-1})\bigr]$,
+    \item $\bar ss=\bigl[(s_1,\dots,s_{n-1},s_ns),\;I\bigr]$ for $s$ a point-state,
+    \item $\bar s(\sigma)=s_1\cdots s_n(\sigma)$ for $\sigma\in\termp$,
+    \item $\bar s_c=s_{i_k}\cdots s_n$,
+    \item if $\sigma\in\termp$ and $\varkappa\in\expi$ then $\bar s\{\sigma\mapsto\varkappa\}=\bigl[(s_1,\dots,s_k[\sigma\mapsto\varkappa],\dots,s_n),\;I\bigr]$ where $k$ is the maximum index such that
+    $\sigma\in\dom s_k$.
+\end{enumerate}
+
+\begin{example} \label{example:state}
+
+    Let $\Sigma^0=\set\NUM$, $\Sigma^1=\set\LIST$, so that $\Sigma=\Sigma^0\cup\Sigma^1$; and $\c A^0=\set{\SEMI,\LBRACK,\RBRACK}$, $\c A^1=\set\OP$, so that $\c A=\c A^0\cup\c A^1$.
+    Now suppose that the printable terms, $\termp$, consists of variable names: $\mb{x_1},\mb{x_2},\dots$, as well as symbols for numbers $\mbt{1},\mbt{2},\dots$, symbols for binary operations $\mbt+,\mbt*$, and the
+    symbols $\mbt;,\mbt[,\mbt]$.
+    For readability, we again return to putting boxes around printable terms (but only \textit{printable} terms).
+
+    The set of values $\values$ is defined as follows:
+    \begin{enumerate}
+        \item \ttt{none} is a value,
+        \item every number is a value,
+        \item every list of non-\ttt{none} values is a value, i.e. if $v_1,\dots,v_n\in\values$ and $v_i\neq\ttt{none}$ then $(v_1,\dots,v_n)\in\values$.
+    \end{enumerate}
+
+    Our initial state, $s_1$ will map numbers $\mbt{n}$ to $\NUM(n)$, binary operations $\mb\circ$ to $\OP(\circ)$, and $\mbt;\mapsto\SEMI,\mbt[\mapsto\LBRACK,\mbt]\mapsto\RBRACK$.
+    The program's state will be $\bar s=[(s_1),\;(1)]$.
+
+    Now suppose our program sets $\mb{x_1}$ to the list $(1,2,3)$, then we will want our program's state to be $\bar s=\bar s[\mb{x_1}\mapsto\LIST\NUM((1,2,3))]$.
+    And suppose now that our program enters a block, then we will set our program's state to $\bar s=\bar s+\varnothing$.
+    Upon exiting the block, we set our program's state to $\bar s=\pop\bar s$.
+
+    Now suppose our program wants to a call a function which has parameters $\mb{x_1},\mb{x_2},\mb{x_3}$ and a closure $s$ with the input $1,2,((3,4),(5,6))$.
+    Then our program's state will be
+    \[ \bar s = (\bar s +_c s)\bigl[\mb{x_1}\mapsto\NUM(1),\mb{x_2}\mapsto\NUM(2),\mb{x_3}\mapsto\LIST(\LIST\NUM)((3,4),(5,6))\bigr] \]
+    We do $+_c$ instead of a normal $+$ because we are creating another scope.
+    Now suppose we define a function inside this scope, then we will need to take $\bar s_c$ and add this to the function so it can access variables from this scope.
+
+\end{example}
+
+\subsubsection{The $\beta$-Reducer}
+
+Now we can describe the initial $\beta$-reducer and its derived $\beta$-reducer.
+
+As before, we have an \textit{initial priority function}, which is a function $\pi\colon\termp\longto\bbZ$.
 This can be naturally extended to $\pi\colon\termp^*\longto\oe^*$ as before: $\pi(\sigma^1\cdots\sigma^n)=\sigma^1_{\rho_1}\cdots\sigma^n_{\rho_n}$ where $\rho_i=\pi(\sigma^i)$.
 
-Finally, our \textit{initial $\beta$-reducer} is a function ($\state$ is a set of functions $\termp\partial\expi$ which we define later)
-\yoni{Using something and defining it later should be avoided...}
-\ari{We can move the definition up, but I felt like it messed with the flow.}
-\yoni{But also using something and defining it later messes the flow... We can probably find a way that is clear without jumps.}
-
-\yoni{Generally, this section is hard to follow. I suggest adding plenty of examples, after every new definition / concept, please add an appropriate small example.}
-\ari{I'm not really sure what kinds of examples to add; I added a big example at the end that we can potentially split up?
-But I feel like we need all of the definitions to give a good example.}
-\yoni{exactly -- the idea is to break the example to many small examples, so that each concept is clearer.}
-
+Finally, our \textit{initial $\beta$-reducer} is a function
 \[ \hb\colon\termi\times\term^\epsilon \partial \termi^\epsilon\times(\bbZ\times\bbZ\to\bbZ)\times(\values\times\values\times\state\partial\values\times\termp^*\times\state) \]
 and we extend this to a \textit{derived $\beta$-reducer}, a function
 \[ \beta\colon\oe^*\times\state \partial \oe^*\times\state \]
@@ -425,40 +471,13 @@ We define $\beta\gen\xi[\bar s]$ as follows, where $\xi=\sigma^1_{p_1}(v_1)\cdot
     \[ \beta\gen\xi[\bar s] = \gen{\sigma^1_{p_1}(v_1)\xi'}[\bar s'] \]
 \end{enumerate}
 
-\subsubsection{States}
-
-We begin by defining \textit{point-states} to be partial maps $\termp\partial\expi$.
-If $s_1,s_2$ are two point-states then we define their composition to be
-\[ s_1s_2(\sigma) = \begin{cases} s_2(\sigma) & \sigma\in\dom s_2\\ s_1(\sigma) & \sigma\in\dom s_1-\dom s_2\end{cases} \]
-Point-states with finite domain will be denoted by $[\sigma_i\mapsto\varkappa_i]_{i=1}^n$ where $\sigma_1,\dots,\sigma_n$ is the domain and $\varkappa_1,\dots,\varkappa_n$ are their respective images.
-
-A \textit{state} will be a pair of a sequence of point-states and a set of indices.
-This will be denoted by $\bar s=[(s_1,\dots,s_n),\;I=(i_1,\dots,i_k)]$ (we require that $k\leq n$).
-We define
-\begin{enumerate}
-    \item $\bar s+s=\bigl[(s_1,\dots,s_n,s),\;I\bigr]$, for $s$ a point-state,
-    \item $\bar s+_cs=\bigl[(s_1,\dots,s_n,s),\;(i_1,\dots,i_k,n+1)\bigr]$, for $s$ a point-state,
-    \item $\pop\bar s=\bigl[(s_1,\dots,s_{n-1}),\;I\bigr]$ if $i_k<n$, otherwise it is defined to be equal to $\bigl[(s_1,\dots,s_{n-1}),\;(i_1,\dots,i_{k-1})\bigr]$,
-    \item $\bar ss=\bigl[(s_1,\dots,s_{n-1},s_ns),\;I\bigr]$ for $s$ a point-state,
-    \item $\bar s(\sigma)=s_1\cdots s_n(\sigma)$ for $\sigma\in\termp$,
-    \item $\bar s_c=s_{i_k}\cdots s_n$,
-    \item if $\sigma\in\termp$ and $\varkappa\in\expi$ then $\bar s\{\sigma\mapsto\varkappa\}=\bigl[(s_1,\dots,s_k[\sigma\mapsto\varkappa],\dots,s_n),\;I\bigr]$ where $k$ is the maximum index such that
-    $\sigma\in\dom s_k$.
-\end{enumerate}
-
-\ari{Adding the following example:}
-
 \begin{example}
 
-    Let $\Sigma^0=\set\NUM$, $\Sigma^1=\set\LIST$, $\Sigma=\Sigma^0\cup\Sigma^1$; and finally we have $\c A^0=\set{\COLON,\LBRACK,\RBRACK}$, $\c A^1=\set\OP$, $\c A=\c A^0\cup\c A^1$.
-    Let our set of printable terms consists of numbers as well as $\set{\mbt+,\mbt*,\mbt;,\mbt[,\mbt]}$.
-    For readability, we again return to putting boxes around printable terms (but only \textit{printable} terms).
+    Our base sets and initial state will be defined as in example \ref{example:state}.
     Our initial priority function is
     \[ \pi(\mbt n) = \infty,\ \pi(\mbt+) = 1,\ \pi(\mbt*) = 2,\ \pi(\mbt;) = 0,\ \pi(\mbt[) = 0,\ \pi(\mbt]) = 0 \]
     We can transform the following stream \ttt{[1 + 2; 3 * 4;]} (which should be interpreted as the list $(3,12)$) into the stream of expressions:
     \[ \mbt[_0\ \mbt1_\infty\ \mbt+_1\ \mbt2_\infty\ \mbt;_0\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0 \]
-
-    Our initial state will map numbers $\mbt n$ to $\NUM(n)$; operations $\mbt{$\circ$}$ to $\OP(\circ)$; $\mbt;$ to $\COLON$; $\mbt[$ to $\LBRACK$; and $\mbt]$ to $\RBRACK$.
 
     Our initial $\beta$-reducer is defined as follows: (we will neglect the input state and output state and string in the output of the $\beta$-reducer as they are held constant and empty, respectively.
     That is, instead of $\hb(\dots)=(\dots,(v,u,\bar s\mapsto\dots,\epsilon,\bar s))$ we will just write $\hb(\dots)=(\dots,(v,u\mapsto\dots))$.)
@@ -466,7 +485,7 @@ We define
         \item $\hb(\NUM,\OP)=(\OP\NUM,\snd,(v,f,\mapsto(v,f)))$
         \item $\hb(\OP\NUM,\NUM)=(\NUM,\snd,((v,f),u,\bar s\mapsto f(v,u)))$
         \item $\hb(\OP\NUM,\OP\NUM)=(\OP\NUM,\snd,((v,f),(u,g)\mapsto (f(v,u),g)))$
-        \item $\hb(\sigma,\COLON)=(\sigma,\zero,(v,\_\mapsto v))$
+        \item $\hb(\sigma,\SEMI)=(\sigma,\zero,(v,\_\mapsto v))$
         \item $\hb(\LBRACK,\sigma)=(\LBRACK\sigma,\fst,(\_,v\mapsto(v)))$
         \item $\hb(\LBRACK\sigma,\sigma)=(\LBRACK\sigma,\fst,(\ell,v\mapsto\ell::(v)))$
         \item $\hb(\LBRACK\sigma,\RBRACK)=(\LIST\sigma,\pinfty,(\ell,\_\mapsto\ell))$
@@ -480,7 +499,7 @@ We define
         &\LBRACK_0\ \NUM_\infty(1)\ \OP_1(+)\ \mbt2_\infty\ \mbt;_0\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK_0\ \OP\NUM_1(1,+)\ \mbt2_\infty\ \mbt;_0\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK_0\ \OP\NUM_1(1,+)\ \NUM_\infty(2)\ \mbt;_0\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
-        &\LBRACK_0\ \OP\NUM_1(1,+)\ \NUM_\infty(2)\ \COLON_0\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
+        &\LBRACK_0\ \OP\NUM_1(1,+)\ \NUM_\infty(2)\ \SEMI_0\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK_0\ \OP\NUM_1(1,+)\ \NUM_0(2)\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK_0\ \NUM_0(3)\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK\NUM_0((3))\ \mbt3_\infty\ \mbt*_2\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
@@ -488,7 +507,7 @@ We define
         &\LBRACK\NUM_0((3))\ \NUM_\infty(3)\ \OP_2(*)\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK\NUM_0((3))\ \OP\NUM_2(3,*)\ \mbt4_\infty\ \mbt;_0\ \mbt]_0\cr
         &\LBRACK\NUM_0((3))\ \OP\NUM_2(3,*)\ \NUM_\infty(4)\ \mbt;_0\ \mbt]_0\cr
-        &\LBRACK\NUM_0((3))\ \OP\NUM_2(3,*)\ \NUM_\infty(4)\ \COLON_0\ \mbt]_0\cr
+        &\LBRACK\NUM_0((3))\ \OP\NUM_2(3,*)\ \NUM_\infty(4)\ \SEMI_0\ \mbt]_0\cr
         &\LBRACK\NUM_0((3))\ \OP\NUM_2(3,*)\ \NUM_0(4)\ \mbt]_0\cr
         &\LBRACK\NUM_0((3))\ \NUM_0(12)\ \mbt]_0\cr
         &\LBRACK\NUM_0((3,12))\ \mbt]_0\cr
@@ -497,7 +516,6 @@ We define
     }
 
 \end{example}
-
 
 \section{Implementing the Algorithm}
 
@@ -1380,6 +1398,35 @@ We define $B=(\Sigma,\Gamma,\square,\blacksquare,\bullet,s,\hb)$ as follows:
 \end{enumerate}
 Indeed, a word of the form $a\cdots ab\cdots b$ will be mapped to $S_a\cdots S_aS_b\cdots S_b$, which will then be reduced to $S_a\cdots S_aS_{ab}S_b\cdots S_b\to S_a\cdots S_{aab}S_b\cdots S_b\to S_a\cdots S_{ab}\cdots S_b$, and so on until $S_{ab}$, which is then reduced
 to $\bullet$.
+
+\subsubsection{Priorities}
+
+Now, one may be inclined to ask why we don't add priorities to this $\beta$-reduction.
+It turns out that priorities, under certain assumptions, don't add any power.
+Indeed, suppose we added priorities to our $\beta$-reducer, so now our initial $\beta$-reducer is of the form
+\[ \hb\colon\Gamma\times(\Gamma\cup\set{\epsilon,\blacksquare})\partial(\Gamma\cup\set{\epsilon,\bullet})\times(\bbN\times\bbN\to\bbN) \]
+and we have an initial priority function $\pi\colon\Sigma\to\bbN$.
+Let $F$ be the set of priority functions returned by $\hb$, that is
+\[ F = \set{f\colon\bbN\times\bbN\to\bbN}[\exists\sigma\in\Gamma,\tau\in\Gamma\cup\set{\epsilon,\blacksquare}\colon\hb(\sigma,\tau)=(\alpha,f)] \]
+and let $N=\mathrm{Im}\pi$ be the set of all initial priorities.
+Now let us define $N_0=N$ and $N_{n+1} = N_n\cup\set{f(n,m)}[n\geq m\in N_n, f\in F]$.
+We define $N_\infty=\bigcup_{n\geq0}N_n$.
+If $N_\infty$ is finite, then there exists an equivalent \BR-schema (one without priorities).
+
+The proof of this is simple: define $B=(\Sigma,\Gamma',\square,\blacksquare,\bullet,s',\hb')$ where
+\begin{enumerate}
+    \item $\Gamma'=\Gamma\times N_\infty$ which is still finite.
+        Elements of $\Gamma'$ will be written as $\sigma_n$ instead of $(\sigma,n)$.
+    \item $s'$ maps $\sigma$ to $s(\sigma)_{\pi(\sigma)}$.
+    \item If $\hb(\sigma,\tau)=(\alpha,f)$ then for $n\geq m\in N_\infty$ we define $\hb'(\sigma_n,\tau_m)=\alpha_{f(n,m)}$.
+        Note that by definition $f(n,m)\in N_\infty$ so this is well-defined.
+\end{enumerate}
+It is not hard to see that the $\beta$-reducer and this \BR-schema both generate the same language.
+
+The requirement that $N_\infty$ be finite is a strong condition (for example, $F$ cannot include a function of the form $(n,m)\mapsto n+m$ if $N\neq\set0$).
+But in practice this is not a restrictive condition, for example ILang satisfies this condition: if $F$ consists of functions of the form $k_c$ (the constant map), $\snd,\fst$, then $F_\infty$ will trivially be finite.
+
+\subsubsection{Regular Languages}
 
 \begin{definition}
 
