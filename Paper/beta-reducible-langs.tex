@@ -1,0 +1,385 @@
+\documentclass{llncs}
+
+%\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
+%\usepackage{mdframed}
+%\usepackage{cleveref}
+
+\def\labelitemi{$\top$}
+\def\labelenumi{(\textbf{\arabic{enumi}})}
+
+\usepackage{tikz}
+\usetikzlibrary{trees}
+
+\newcounter{algo}
+
+\floatstyle{ruled}
+\newfloat{algo}{h}{aux}
+\floatname{algo}{Algorithm}
+
+\input preamble
+
+%\newcommand{\yoni}[1]{{\begin{mdframed}[linecolor=red]{\color{red}#1}\end{mdframed}}}
+%\newcommand{\ari}[1]{{\begin{mdframed}[linecolor=blue]{\color{blue}#1}\end{mdframed}}}
+\def\yoni#1{\par\noindent\fbox{\color{red}#1}\par}
+\def\ari#1{\par\noindent\fbox{\color{blue}#1}\par}
+\begin{document}
+
+\title{Beta-Reduction}
+\author{Ari Feiglin\inst{1}\and Yoni Zohar\inst{1}}
+\institute{Bar-Ilan University, Ramat Gan, Israel}
+
+\maketitle
+
+\begin{abstract}
+
+    In this paper we discuss an alternative approach to parsing context-free languages.
+    \keywords{Context-Free Languages\and Parsing}
+
+\end{abstract}
+
+\section{$\beta$-Reducability}
+
+In this section we investigate the formal language-theoretical properties of $\beta$-reduction.
+In particular we discuss what sorts of languages can be $\beta$-reduced.
+The definition of $\beta$-reduction in this section differs slightly from our previous definition, but the core principal
+is preserved.
+In particular, we will forgo priorities, which as we will see are beneficial implementation-wise, but unnecessary theoretically.
+
+\subsection{The $\beta$-Reduction Hierarchy}
+
+We begin by defining multiple classes of languages.
+These are all special cases of the class we will begin to define now.
+
+\begin{definition}
+
+    Let $n>0$ be an integer, then an \emph{$n$-nondeterministic $\beta$-reduction schema} (shortened to $n-\NBR$ schema) is
+    a tuple $B=(\Sigma,\Gamma,\square,\top,\hb)$ where
+    \begin{enumerate}
+        \item $\Sigma$ is a finite alphabet of terminals;
+        \item $\Gamma$ is a finite alphabet of variables (we will assume that $\Sigma\subseteq\Gamma$, or that there exists a
+            clear mapping of $\Sigma$ into $\Gamma$);
+        \item $\square$ is a symbol in $\Gamma$ (the string beginning-marker);
+        \item $\top$ is a symbol (potentially in $\Gamma$), or the empty word;
+        \item $\hb$ is an \emph{initial $\beta$-reducer}, which is a function
+        $$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon)\to\P((\Gamma\cup\set{\top})^{\leq n}\cup\set\perp) $$
+            Where $\perp$ is a symbol distinct from any other previously discussed symbol.
+    \end{enumerate}
+
+\end{definition}
+
+Let us focus on the initial $\beta$-reducer.
+It takes as input two symbols and outputs a set of strings in $\Gamma\cup\set\top$ of length $\leq n$, and the set may also
+contain the symbol $\perp$.
+$\top$ is the target string, if we can reduce the string to $\top$ we consider the string part of the language.
+And $\perp$ says that you can non-deterministically skip the reduction.
+
+So for example if
+$$ \hb(a,b) = \set{c,d,\perp},\quad \hb(b,a) = \set{c} $$
+the string $aba$ can be reduced (in a single step) to one of the following:
+$$ ca\quad da\quad ac $$
+The first two result from reducing the first two characters ($a,b$) to one of their potential products, the third results from
+skipping the first reduction (since $\perp\in\hb(a,b)$) and reducing the second two characters ($b,a$).
+
+Let's formally define this process of reduction.
+We assume that $\hb$ never returns an empty set (if we want to say that we can't reduce two symbols, we can return $\set\perp$).
+Furthermore, we define concatenation of two sets of strings component-wise:
+$A\circ B=\set{\xi_1\circ\xi_2}[\xi_1\in A,\xi_2\in B]$.
+Where $\circ$ is the concatenation operator, which we will from now on leave out writing explicitly.
+Furthermore, concatenation between a string and a set is done in the obvious way: $\xi A=\set\xi A$ and $A\xi=A\set\xi$.
+Note that $\varnothing A=A\varnothing=\varnothing$, while $\epsilon A=A\epsilon=A$.
+
+\begin{definition}
+
+    Let $B$ be an $n$-\NBR, then we define its $\beta$-reduction function as follows.
+    The function is $\beta\colon(\Gamma\cup\set\top)^*\to\P_{<\omega}((\Gamma\cup\set\top)^*)$ and defined as follows:
+    \begin{enumerate}
+        \item $\beta(\top)=\set\top$;
+        \item $\beta(\sigma)=\hb(\sigma,\epsilon)-\set\perp$ if non-empty, and otherwise $\set\sigma$;
+        \item For a string $\sigma_1\sigma_2\xi$, we first add
+        $\bigl((\hb(\sigma_1,\sigma_2)-\set\perp)\xi\bigr)\cup\bigl((\hb(\sigma_1,\epsilon)-\set\perp)\sigma_2\xi\bigr)$ to
+        the result.
+        Then if $\perp\in\hb(\sigma_1,\sigma_2)\cup\hb(\sigma_1,\epsilon)$ we also add $\sigma_1\beta(\sigma_2\xi)$.
+    \end{enumerate}
+    This extends to a function $\beta\colon\P_{<\omega}((\Gamma\cup\set\top)^*)\to\P_{<\omega}((\Gamma\cup\set\top)^*)$
+    in the natural way.
+    We then define the relation $\xi\to\xi'$ to mean that $\xi'\in\beta(\xi)$; and we define $\sto$ to be the reflexive and
+    transitive closure of $\to$.
+
+    We then define the language of $B$ (or the language \emph{recognized} by $B$) to be
+    $$ \L(B) = \set{w\in\Sigma^*}[\square w\sto\top] $$
+    We define the class $\nNBR$ to be the class of all languages recognized by $\nNBR$ schemas.
+    And we define $\sNBR=\bigcup_n\nNBR$.
+
+\end{definition}
+
+Note that an $\sNBR$-schema may be defined similar to an $\nNBR$-schema, but where the initial $\beta$-reducer returns finite
+subsets of $(\Gamma\cup\set\top)^*$ (denoted $\P_{<\omega}((\Gamma\cup\set\top)^*)$).
+This is since $\hb$ will return a longest string of some length $n$, and then the schema is an $\nNBR$ schema.
+
+\subsection{Context-Free Languages}
+
+Recall the definition of context-free languages:
+
+\begin{definition}
+
+    A \emph{context-free grammar} is a tuple $G=(\Sigma,V,S,P)$ where
+    \begin{enumerate}
+        \item $\Sigma$ is a finite alphabet of terminals;
+        \item $V$ is a finite alphabet of variables;
+        \item $S\in V$ is the initial variable;
+        \item $P\subseteq V\times(\Sigma\cup V)^*$ is a set of production rules, where we write $A\vdash_G\alpha$ in place of
+        $(A,\alpha)\in P$ (and we may omit the subscript from $\vdash$ when $G$ is understood).
+    \end{enumerate}
+    We extend the definition of $\vdash$ to a relation $(\Sigma\cup V)^*\times(\Sigma\cup V)^*$, where if
+    $\alpha A\beta$ is a string of terminals and variables, $A\in V$ such that $A\vdash\gamma$, then
+    $\alpha A\beta\vdash\alpha\gamma\beta$.
+    $\vdash^*$ is the reflexive and transitive closure of $\vdash$.
+    The language of $G$ is defined to be
+    $$ \L(G) = \set{w\in\Sigma^*}[S\vdash^*w] $$
+    A language is \emph{context-free} if it is the language of some context-free grammar.
+    The class of context-free languages is denoted $\CFL$.
+
+\end{definition}
+
+Our goal of this section is to investigate the relationship between the classes $\CFL$ and $\nNBR,\sNBR$.
+
+\begin{lemma}
+
+    $\CFL\subseteq\sNBR$.
+
+\end{lemma}
+
+\begin{proof}
+
+    Let $G=(\Sigma,V,S,P)$ be a context-free grammar.
+    We construct an \sNBR-schema $B=(\Sigma,\Gamma,S,\epsilon,\hb)$, where $\Gamma=V\cup\Sigma\cup\overline\Sigma$ where
+    $\overline\Sigma$ is a disjoint copy of $\Sigma$.
+    For each production rule $A\vdash\alpha\in P$ we place $\perp,\overline\alpha^r\in\hb(A,\epsilon)$ (where $\overline\alpha$
+    is $\alpha$ where $\sigma\in\Sigma$ is replaced with $\overline\sigma\in\overline\Sigma$).
+    And for $\sigma\in\Sigma$, $\hb(\overline\sigma,\sigma)=\set{\epsilon}$.
+
+    Note that $A\to^*\overline\alpha\in(V\cup\overline\Sigma)^*$, and so when reducing $A$, we can choose any variable to
+    reduce.
+    That is, if $A_1\to\alpha_1$ and $A_2\to\alpha_2$, and $A\to^*\gamma_1A_1\gamma_2A_2\gamma_3$, then we have that in a single
+    reduction we can either get $\gamma_1\alpha_1\gamma_2A_2\gamma_3$ or we get  $\gamma_1A_1\gamma_2\alpha_2\gamma_3$.
+    This is because elements of $\overline\Sigma$ won't be reduced, and all other reductions (of variables) may be skipped, as
+    they contain $\perp$.
+
+    Now we claim that for any $n\geq0$ and $A\in V$, if $A\vdash^n\alpha$ iff $A\to^n\overline\alpha^r$.
+    This is clear by induction: for $n=0$ this is because $\alpha=A$.
+    For $n=1$ this is by definition.
+    Now suppose $A\vdash^n\alpha_1B\alpha_3$ and $B\vdash\alpha_2$, so that $A\vdash^{n+1}\alpha_1\alpha_2\alpha_3$.
+    Then by induction $A\to^n\alpha_3^rB\alpha_1^r$ and by definition $B\to\alpha_2^r$, so that we have
+    $A\to^{n+1}\alpha_3^r\alpha_2^r\alpha_1^r=(\alpha_1\alpha_2\alpha_3)^r$ as required.
+    The other direction is proven in a similar way.
+
+    If $w\in\L(G)$, we have that $S\vdash^*w$, and so $Sw\sto\overline w^rw$, which clearly then $\sto\epsilon$.
+    So $w\in\L(B)$.
+
+    Now if $Aw\sto\overline\alpha w_2$, then we claim there exists a $w_1$ such that $w=w_1w_2$ and $A\vdash^*w_1\alpha^r$.
+    We do this by induction on the number of steps in the reduction, $n$.
+    For $n=0,1$ this is clear ($w_1=\epsilon$) in both cases.
+    Now suppose $Aw\to^n\overline\alpha w_2$, then $w=w_1w_2$ and $A\vdash^*w_1\alpha^r$.
+    If the next reduction is in $\overline\alpha$, this must be a variable reduction, which means that $A\vdash^*w_1(\alpha')^r$
+    and $Aw\to^{n+1}\overline\alpha' w_2$, so $w'_1=w_1$ still satisfies the requirement.
+    Otherwise, the reduction is of the form
+    $$ Aw\to^n\overline\alpha'\overline\sigma\sigma w'_2 \to\overline\alpha'w'_2 $$
+    In which case $w=w_1w_2=w_1\sigma w'_2$, so that $w'_1$ must be $w_1\sigma$.
+    Now, notice that $A\vdash^*w_1\alpha^r=w_1(\alpha'\sigma)^r=w_1\sigma(\alpha')^r=w'_1(\alpha')^r$ as required.
+
+    So we have that $Sw\sto\epsilon$, so $w_2=\epsilon$ and thus $w_1=w$, meaning $S\vdash^*w$.
+    Thus if $w\in\L(B)$, $w\in\L(G)$, as required.
+    \qed
+
+\end{proof}
+
+Notice that the parameter of the $\sNBR$-schema is dependent only on the length of the production strings in $G$.
+That is $B$ is an $\nNBR$-schema where $n=\max\set{\abs\alpha}[A\vdash_G\alpha]$.
+Every context-free grammar has an equivalent in Chomsky normal form (CNF), whose $n$ is $2$.
+Thus $\CFL\subseteq\pNBR2$.
+
+In fact, $\sNBR=\pNBR2$; this is not difficult to prove.
+Take an $\nNBR$-schema $B=(\Sigma,\Gamma,\square,\top,\hb)$ and define a $\pNBR2$-schema
+$B_2=(\Sigma,\Gamma_2,\square,\top,\hb_2)$ as follows: $\Gamma_2$ will contain $\Gamma$ as well as every prefix of strings
+returned by $\hb$ (each prefix is distinct, if two strings have the same prefix, or the same string is returned by two different
+reductions, we consider them distinct).
+Given such a prefix $\xi$, denote the symbol in $\Gamma_2$ by $\mbox\xi$.
+Then if $\sigma_1\cdots\sigma_n\in\hb(\tau_1,\tau_2)$, we define
+$$ \hb_2(\tau_1,\tau_2) = \mbox{\sigma_1\cdots\sigma_n},\quad
+\hb_2(\mbox{\sigma_1\cdots\sigma_k},\epsilon)=\set{\mbox{\sigma_1\cdots\sigma_{k-1}}\sigma_k}\hbox{ for $k\leq n$} $$
+If $\perp\hb(\tau_1,\tau_2)$, then $\perp\in\hb_2(\tau_1,\tau_2)$ as well.
+
+\begin{lemma}
+
+    $\sNBR=\pNBR2$
+
+\end{lemma}
+
+Though, the most important result is as follows:
+
+\begin{lemma}
+
+    $\CFL\subseteq\pNBR1$
+
+\end{lemma}
+
+\begin{proof}
+
+    Let $G$ be a context-free grammar in Chomsky normal form.
+    We define $B=(\Sigma,\Gamma,\square,\epsilon,\hb)$, where $\Gamma=\Sigma\cup V\cup\set\square$ and for every rule
+    $A\vdash_GXY$, we add the reduction $X,Y\to_BA$.
+    And for every rule $A\vdash_G\sigma$, we add the reduction $\sigma,\epsilon\to_BA$.
+    Then for every two symbols $X,Y$ we add the reduction $X,Y\to_B\vdash$.
+    If $S\vdash_G\epsilon$ is a rule, then we also add the reduction $\square,\epsilon\to_B\epsilon$.
+    We also add the rule $\square,S\to_B\epsilon$.
+
+    Now, we claim that for $\alpha,\gamma\in\Gamma^*$, $\alpha\vdash\gamma$ if and only if $\gamma\to\alpha$.
+    Indeed, if $\alpha=\alpha_1A\alpha_2$ and we use the rule $A\to XY$, then $\gamma=\alpha_1XY\alpha_2$.
+    And we can use the reduction $X,Y\to A$ to get $\gamma\to\alpha_1A\alpha_2=\alpha$ (since every reduction contains $\perp$,
+    we can arbitrarily skip strings).
+    And if $\alpha=\alpha_1A\alpha_2$ and we use the rule $A\to\sigma$, then $\gamma=\alpha_1\sigma\alpha_2$ and of course we
+    have $\gamma\to\alpha$.
+
+    Proving the other direction is similar.
+    Thus we have $\alpha\vdash\gamma$ if and only if $\gamma\to\alpha$.
+    Thus $\alpha\vdash^*\gamma$ if and only if $\gamma\to^*\alpha$.
+    In particular $S\vdash^*\gamma$ (i.e. $\gamma\in\L(G)$) if and only if $\gamma\to^*S$.
+    This means that $\square\gamma\to^*\square S\to\epsilon$, so $\gamma\in\L(B)$.
+    If $\square$ is reduced before $\gamma$ gets to $S$, we will have the case $\square\gamma\to^*S$, which won't reduce.
+    So in either case we have that $S\vdash^*\gamma\iff\square\gamma\to^*S$.
+    This works for $\gamma=\epsilon$ as well.
+    So we have $\L(G)=\L(B)$ as required.
+    \qed
+
+\end{proof}
+
+\subsection{Deterministic $\beta$-Reduction}
+
+\begin{definition}
+
+    An $\nNBR$-schema $B$ is \emph{deterministic} if for every $\sigma\in\Gamma,\tau\in\Gamma\cup\set\epsilon$, we have that
+    $\lvert\hb(\sigma,\tau)\rvert=1$.
+    That is $\hb(\sigma,\tau)=\set\alpha$ or $\hb(\sigma,\tau)=\set\perp$.
+    We call a deterministic $\nNBR$-schema an $\nBR$-schema.
+    Equivalently an $\nNBR$-schema is one where $\hb$ is a partial function
+    $$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon) \partial (\Gamma\cup\set\top)^{\leq n} $$
+    (Where an image not being defined is equivalent to defining it to be $\set\perp$.)
+
+    The class of languages accepted by $\nBR$-schemas is denoted $\nBR$.
+    Let $\sBR=\bigcup_{n>0}\nBR$.
+
+\end{definition}
+
+Our goal in this section is to understand the relationship between $\nBR$ and the class of deterministic context-free languages.
+We denote this class by $\DCFL$.
+Recall that a deterministic context-free language is one that can be accepted by a deterministic pushdown automaton.
+Our previous proof techniques do not work for the deterministic case, as they rely on the ability to non-deterministically
+choose whether or not to reduce.
+
+Though notice that our proof that $\sNBR=\pNBR2$ converts deterministic schemas to deterministic schemas.
+So we immediately have that
+
+\begin{lemma}
+
+    $\sBR=\pBR2$
+
+\end{lemma}
+
+We will use an equivalent definition of deterministic context-free languages to show that $\DCFL\subseteq\pBR2$.
+
+\begin{definition}
+
+    An \emph{LR parser} is a tuple $P=(\Sigma,Q,V,\action,\goto,q_0,\square)$ where
+    \begin{enumerate}
+        \item $\Sigma$ is a finite alphabet of terminals;
+        \item $Q$ is a finite set of states (disjoint from $\Sigma$);
+        \item $V$ is a finite set of variables (disjoint from $\Sigma$ and $Q$);
+        \item $\action$ is a partial function
+        \begin{multline*}
+            \action\colon Q\times\Sigma\cup\set\square\partial\\
+            \set{\shift(q)}[q\in Q]\cup\set{\reduce(A,n)}[A\in V,n\in{\bb Z}_{\geq0}]\cup\set\accept
+        \end{multline*}
+        ($\shift,\reduce,\accept$ are simply distinct symbols.)
+        \item $\goto$ is a partial function
+        $$ \goto\colon Q\times V \partial Q $$
+        \item $q_0\in Q$ is the initial state;
+        \item $\square$ is a symbol not in $\Sigma\cup Q\cup V$, the string endmarker.
+    \end{enumerate}
+
+\end{definition}
+
+\begin{definition}
+
+    A \emph{configuration} of an LR parser $P$ is a pair $c\in Q^*\times(\Sigma\cup\set\square)^*$, i.e. a pair
+    of the form $(p_0\cdots p_n\;;\;\sigma_1\cdots\sigma_m)$.
+    We define $P(c)$ as follows: suppose $c=(q_0\cdots q_m\;;\;\sigma_1\cdots\sigma_n\square)$, then
+    \begin{enumerate}
+        \item if $\action(q_m,\sigma_1)=\shift(p)$ then
+        $$ P(c) = (q_0\cdots q_mp\;;\;\sigma_2\cdots\sigma_n\square) $$
+        \item if $\action(q_m,\sigma_1)=\reduce(A,k)$ then let $p=\goto(q_{m-k},A)$ and
+        $$ P(c) = (q_0\cdots q_{m-k}p\;;\;\sigma_1\cdots\sigma_n\square) $$
+        if $\goto(p_{m-k},A)$ is undefined, $P(c)=\bot$ (a special configuration invariant under $P$);
+        \item if $\action(q_m,\sigma_1)=\accept$ then $P(c)=\top$ (also invariant under $P$);
+        \item if $\action(q_m,\sigma_1)$ is undefined then $P(c)=\bot$.
+    \end{enumerate}
+    The language of $P$ is
+    $$ \L(P) = \set{w\in\Sigma^*}[\hbox{there exists an $n>0$ such that $P^n(q_0\;;\;w\square)=\top$}] $$
+
+\end{definition}
+
+A well-known theorem is the following:
+
+\begin{theorem}
+
+    A language $\L$ is deterministic context-free if and only if there exists an LR parser such that $\L(P)=\L$.
+
+\end{theorem}
+
+\begin{lemma}
+
+    $\DCFL\subseteq\sBR$
+
+\end{lemma}
+
+\begin{proof}
+
+    Let $P$ be an LR parser.
+    We define a $\sBR$-schema $(\Sigma,\Gamma,q_0,\top,\hb)$ where $\Gamma$ consists of $\Sigma\cup Q$ and for every
+    $\reduce(A,n)$ in the image of $\action$, $M_{k,A}$ for $k\leq n$ and $A\in V$, and we add $\perp,\top$ as well.
+
+    For every $q\in Q$ and $\sigma\in\Sigma$,
+    \begin{enumerate}
+        \item if $\action(q,\sigma)=\shift(p)$ then $\hb(q,\sigma)=qp$;
+        \item if $\action(q,\sigma)=\reduce(A,n)$, then $\hb(q,\sigma)=qM_{n,A}\sigma$;
+        \item if $\action(q,\sigma)=\accept$, then $\hb(q,\sigma)=\top$;
+        \item if $\action(q,\sigma)$ is undefined, then $\hb(q,\sigma)=\bot$;
+        \item $\hb(q,M_{n,A})=M_{n-1,A}$ if $n>0$;
+        \item $\hb(q,M_{0,A}=q\goto(q,A)$ if defined, otherwise $\perp$;
+        \item $\hb(\sigma,\top)=\hb(\top,\sigma)=\top$.
+    \end{enumerate}
+    We also add $\hb(q,\epsilon)$ according to $\action(q,\square)$.
+    We can assume that this is not a $\shift$ operation.
+
+    It's not hard to see that for a given configuration $c=(v;w)$, we have that $P(c)=(v',w')$ then $vw\to^* v'w'$.
+    And if $vw\to^*v'w'$ then $P^k(c)=(v',w')$ for some $k\geq0$.
+    Thus we get $\L(P)=\L(B)$ as required.
+    \qed
+
+\end{proof}
+
+Since $\sBR=\pBR2$, we get
+
+\begin{lemma}
+
+    $\DCFL\subseteq\pBR2$
+
+\end{lemma}
+
+\end{document}
+

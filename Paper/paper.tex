@@ -7,7 +7,7 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{graphicx}
-\usepackage{mdframed}
+%\usepackage{mdframed}
 %\usepackage{cleveref}
 
 \def\labelitemi{$\bullet$}
@@ -24,8 +24,10 @@
 
 \input preamble
 
-\newcommand{\yoni}[1]{{\begin{mdframed}[linecolor=red]{\color{red}#1}\end{mdframed}}}
-\newcommand{\ari}[1]{{\begin{mdframed}[linecolor=blue]{\color{blue}#1}\end{mdframed}}}
+%\newcommand{\yoni}[1]{{\begin{mdframed}[linecolor=red]{\color{red}#1}\end{mdframed}}}
+%\newcommand{\ari}[1]{{\begin{mdframed}[linecolor=blue]{\color{blue}#1}\end{mdframed}}}
+\def\yoni#1{\par\noindent\fbox{\color{red}#1}\par}
+\def\ari#1{\par\noindent\fbox{\color{blue}#1}\par}
 \begin{document}
 
 \title{Iterative Reduction: Parsing and Interpreting Code Without Trees}
@@ -1354,7 +1356,7 @@ Define a \BR-schema to be a tuple $B=(\Sigma,\Gamma,\square,\blacksquare,\bullet
     \item $\square,\blacksquare$ are symbols not in $\Sigma,\Gamma$,
     \item $\bullet$ is a symbol (which may be in $\Sigma,\Gamma$) or the empty word,
     \item $s$ is a state, which is a map $\Sigma\to\Gamma$,
-    \item $\hb$ is an initial $\beta$-reducer, which is a partial function $\hb\colon\Gamma\times(\Gamma\cup\set{\epsilon,\blacksquare})\partial\Gamma\cup\set{\epsilon,\bullet}$.
+    \item $\hb$ is an initial $\beta$-reducer, which is a partial function $\hb\colon(\Gamma\cup\set\square)\times(\Gamma\cup\set{\epsilon,\blacksquare})\partial\Gamma\cup\set{\epsilon,\bullet}$.
 \end{enumerate}
 Given a \BR-schema, we define a pre-$\beta$-reducer to be a function $\beta'\colon(\Gamma\cup\set\bullet)^*\longto(\Gamma\cup\set\bullet)^*$ as follows: given a string $\xi\in(\Gamma\cup\set\bullet)^*$ we define $\beta'(\xi)$ as follows:
 \begin{enumerate}
@@ -1384,7 +1386,7 @@ The reason for requiring a \BR-schema to be valid is to ensure that the $\beta$-
 Otherwise, suppose $\sigma\in C(\sigma)$, so we could have that $\hb(\sigma,\square)=\sigma$ for example, and then $\beta$ would never halt on the string $\sigma$.
 Validity is not a strong requirement.
 
-According to theorem \ref{thrm:complexity}, all $\beta$-reducible languages can be reduced by their $\beta$-reducer in $O(n)$ time.
+According to theorem \gobble\ref{thrm:complexity}, all $\beta$-reducible languages can be reduced by their $\beta$-reducer in $O(n)$ time.
 
 For example, $\set{a^nb^n}[n\geq1]$ is in \BR.
 We define $B=(\Sigma,\Gamma,\square,\blacksquare,\bullet,s,\hb)$ as follows:
@@ -1475,60 +1477,65 @@ The question then becomes, what is the relationship between \BR{} and the class 
 We conjecture that $\DCFL=\BR$.
 For example, we are unsure but believe that the language of even palindromes, $\set{ww^r}[w\in\set{a,b}^+]$, is not \BR.
 
-\ari{The following section is just me writing down some ideas, far from finished}
+\subsection{Variants of \BR}
 
-\subsection{Multi-$\beta$-Reducible Languages}
+In this section we define variants of $\beta$-reducible languages, which are all special cases (including the initial variant
+already defined) of the following definition:
 
-For $n\geq1$, a $\BR(n)$-schema is a tuple $(\Sigma,\Gamma,\square,\blacksquare,\bullet,s,\set{\hb_i}_{i=0}^{n-1})$ where $\Sigma,\Gamma,\square,\blacksquare,\bullet,s$ are as before and now
-\[ \hb_i\colon\Gamma\times(\Gamma\cup\set{\epsilon,\square})\partial(\Gamma\cup\set{\epsilon,\bullet})\times\set{0,\dots,n-1} \]
-For each $i\in\set{0,\dots,n-1}$ we define $\beta_i$ as before, but instead of returning the string it also returns the index returned by the reduction.
-$\beta^*$ will then start using $\beta_0$, and then when the current $\beta_i$ returns $j$, it switches to $\beta_j$.
+\begin{definition}
 
-We define \MBR{} to be $\MBR=\bigcup_{n\geq1}\BR(n)$.
+    A \emph{nondeterministic $n$-\BR{} schema} (or an $n$-\NBR{} schema), for $n\in\bN$, is a tuple
+    $B=(\Sigma,\Gamma,\square,\blacksquare,\bullet,s,\hb)$ (like before), where
+    \begin{enumerate}
+        \item $\Sigma$ is a finite alphabet of terminals;
+        \item $\Gamma$ is a finite alphabet of non-terminals (not necessarily disjoint from $\Sigma$);
+        \item $\square,\blacksquare$ are symbols not in $\Sigma,\Gamma$;
+        \item $\bullet$ is a symbol (perhaps in $\Sigma$ or $\Gamma$), or the empty word;
+        \item $s$ is a state, which is a map $\Sigma\to\Gamma$;
+        \item $\hb$ is an initial $\beta$-reducer, which is a function
+        $$ \hb\colon(\Gamma\cup\set\square)\times(\Gamma\cup\set{\epsilon,\blacksquare})\to
+        \P((\Gamma\cup\set{\epsilon,\bullet})^n\cup\set\perp) $$
+    \end{enumerate}
 
-This is (we believe) stronger than \BR: $\set{ww^r}[w\in\set{a,b}^+]$ is \MBR.
-We construct a $\BR(5)$-schema as follows:
-\[ B = \parens{\set{a,b},\set{A,B,A',B'},\square,\blacksquare,\bullet,[a\to A,b\to B],\set{\hb_0,\hb_1,\hb_2,\hb_3,\hb_4}} \]
-Where we have the reduction rules:
-\begin{align*}
-    \hb_0\colon\quad& \square,A\to A',1\\
-        & \square,B\to B',3\\
-    \hb_1\colon\quad& A,\blacksquare\to A',2\\
-    \hb_2\colon\quad& A',A'\to\bullet,2\\
-        &A',\epsilon\to\epsilon,2\\
-        &A',\blacksquare\to A',0\\
-    \hb_3\colon\quad& B,\blacksquare\to B',2\\
-    \hb_4\colon\quad& B',B'\to\bullet,2\\
-        &B',\epsilon\to\epsilon,2\\
-        &B',\blacksquare\to B',0\\
-\end{align*}
-Intuitively, $\hb_0$ detects the first character and ``tags'' it, then $\hb_1$ or $\hb_3$ ``tag'' the end character if it is the same as the beginning character.
-$\hb_2$ and $\hb_4$ ``clean up'' the tags: if the two tagged characters are next to each other, then we can try and accept the word.
-Otherwise delete them both.
+\end{definition}
 
-For the language of palindromes $\set{w\in\set{a,b}^*}[w=w^r]$ we can define a $\BR(3)$-schema where $\bullet=\epsilon$ and
-\begin{align*}
-    \hb_0\colon\quad& \square,A\to\epsilon,1\\
-        & \square,B\to\epsilon,2\\
-    \hb_1\colon\quad& A,\blacksquare\to\epsilon,0\\
-    \hb_2\colon\quad& B,\blacksquare\to\epsilon,0\\
-\end{align*}
+\begin{definition}
 
-But \MBR{} is not contained in \CFL{}: $\set{a^nb^nc^n}[n\geq1]\in\MBR$.
-Indeed, we can construct an \MBR-schema as follows:
-\[ B = \parens{\set{a,b,c},\set{A,B,C,X},[a\to A,b\to B,c\to C],\set{\hb_0,\hb_1,\hb_2,\hb_3}} \]
-And we have the reduction rules:
-\begin{align*}
-    \hb_0\colon\quad& B,A\to X,0\\
-        &C,B\to X,0\\
-        &C,\blacksquare\to C,1\\
-    \hb_1\colon\quad& A,\epsilon\to\epsilon,2\\
-    \hb_2\colon\quad& B,\epsilon\to\epsilon,3\\
-    \hb_3\colon\quad& C,\blacksquare\to\bullet,3\\
-        &C,\epsilon\to\epsilon,1
-\end{align*}
-Intuitively, $\hb_0$ checks that $A$ comes before $B$ which comes before $C$ (as otherwise it places in an $X$, which is never reduced).
-Then $\hb_1$ matches a single $A$, then calls $\hb_2$ to match a single $B$, which calls $\hb_3$ to match a single $C$.
+    Given a nondeterministic $n$-\NBR{} schema $B$, we define the function
+    $\beta'\colon(\Gamma\cup\set\bullet)^*\to\P((\Gamma\cup\set\bullet)^*)$ as follows:
+    \begin{enumerate}
+        \item $\beta'(\bullet)=\set\bullet$;
+        \item $\beta'(\sigma)=\hb(\sigma,\blacksquare)$ if defined, otherwise $\set\sigma$;
+        \item if $\xi=\sigma_1\sigma_2\xi'$, then
+        \begin{enumerate}
+            \item if $\perp\notin\hb(\sigma_1,\sigma_2)$, $\beta'(\xi)=\hb(\sigma_1,\sigma_2)\xi'$
+            (where the concatenation of sets is defined word-wise) if defined, and if $\perp$ is in the reduction, then take
+            the union of this with $\sigma_1\
+            otherwise
+            \item $\beta'(\xi)=\hb(\sigma_1,\epsilon)\xi'$ if defined, otherwise
+            \item $\beta'(\xi)=\sigma_1\beta'(\sigma_2\xi')$.
+        \end{enumerate}
+    \end{enumerate}
+    Then we define the function $\beta\colon(\Gamma\cup\set\bullet)^*\to\P((\Gamma\cup\set\bullet)^*)$ as follows:
+    \begin{enumerate}
+        \item $\beta(\epsilon)=\hb(\square,\blacksquare)$ if defined, otherwise $\set\epsilon$;
+        \item $\beta(\sigma\xi)=\hb(\square,\sigma)\xi$ if defined, otherwise:
+        \item $\beta(\xi)=\beta'(\xi)$.
+    \end{enumerate}
+    This naturally extends to a function $\beta\colon\P((\Gamma\cup\set\bullet)^*)\to\P((\Gamma\cup\set\bullet)^*)$.
+    We then define the \emph{language of $B$} to be
+    $$ \L(B) = \set{w\in\Sigma^*}[\bullet\in\beta^k(s(w))\hbox{ for some $k\geq0$}] $$
+
+\end{definition}
+
+The class $n$-\NBR{} is defined to be the class of all languages recognized by a nondeterministic $n$-\BR{} schema.
+Then we define \sNBR{} to be the union of all $n$-\NBR{} for $n\geq1$.
+
+\begin{definition}
+
+    An $n$-\NBR{} schema is \emph{deterministic} if 
+
+\end{definition}
 
 \bibliographystyle{abbrv}
 \bibliography{paper-bib}
