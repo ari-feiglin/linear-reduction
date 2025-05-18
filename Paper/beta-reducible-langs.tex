@@ -58,23 +58,25 @@ These are all special cases of the class we will begin to define now.
 
 \begin{definition}
 
-    Let $n>0$ be an integer, then an \emph{$n$-nondeterministic $\beta$-reduction schema} (shortened to $n-\NBR$ schema) is
+    Let $n>0$ be an integer, then an \emph{$n$-nondeterministic $\beta$-reduction schema} (shortened to $\nNBR$ schema) is
     a tuple $B=(\Sigma,\Gamma,\square,\top,\hb)$ where
     \begin{enumerate}
         \item $\Sigma$ is a finite alphabet of terminals;
         \item $\Gamma$ is a finite alphabet of variables (we will assume that $\Sigma\subseteq\Gamma$, or that there exists a
             clear mapping of $\Sigma$ into $\Gamma$);
-        \item $\square$ is a symbol in $\Gamma$ (the string beginning-marker);
-        \item $\top$ is a symbol (potentially in $\Gamma$), or the empty word;
+        \item $\square$ is a symbol in $\Gamma$ (the string ends-marker);
+        \item $\top$ is a symbol in $\Gamma$, or the empty word;
         \item $\hb$ is an \emph{initial $\beta$-reducer}, which is a function
-        $$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon)\to\P((\Gamma\cup\set{\top})^{\leq n}\cup\set\perp) $$
-            Where $\perp$ is a symbol distinct from any other previously discussed symbol.
+        $$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon)\to\P(\Gamma^{\leq n}\cup\set\perp) $$
+        Where $\perp$ is a symbol distinct from any other previously discussed symbol.
+        Equivalently, we can view $\hb$ as a relation
+        $$ \hb \subseteq \Gamma\times(\Gamma\cup\set\epsilon)\times\bigl(\Gamma^{\leq n}\cup\set\perp\bigr) $$
     \end{enumerate}
 
 \end{definition}
 
 Let us focus on the initial $\beta$-reducer.
-It takes as input two symbols and outputs a set of strings in $\Gamma\cup\set\top$ of length $\leq n$, and the set may also
+It takes as input two symbols and outputs a set of strings in $\Gamma$ of length $\leq n$, and the set may also
 contain the symbol $\perp$.
 $\top$ is the target string, if we can reduce the string to $\top$ we consider the string part of the language.
 And $\perp$ says that you can non-deterministically skip the reduction.
@@ -97,34 +99,56 @@ Note that $\varnothing A=A\varnothing=\varnothing$, while $\epsilon A=A\epsilon=
 \begin{definition}
 
     Let $B$ be an $n$-\NBR, then we define its $\beta$-reduction function as follows.
-    The function is $\beta\colon(\Gamma\cup\set\top)^*\to\P_{<\omega}((\Gamma\cup\set\top)^*)$ and defined as follows:
+    The function is $\beta\colon\Gamma^*\to\P_{<\omega}(\Gamma^*)$ and defined as follows:
     \begin{enumerate}
-        \item $\beta(\top)=\set\top$;
         \item $\beta(\sigma)=\hb(\sigma,\epsilon)-\set\perp$ if non-empty, and otherwise $\set\sigma$;
         \item For a string $\sigma_1\sigma_2\xi$, we first add
         $\bigl((\hb(\sigma_1,\sigma_2)-\set\perp)\xi\bigr)\cup\bigl((\hb(\sigma_1,\epsilon)-\set\perp)\sigma_2\xi\bigr)$ to
         the result.
         Then if $\perp\in\hb(\sigma_1,\sigma_2)\cup\hb(\sigma_1,\epsilon)$ we also add $\sigma_1\beta(\sigma_2\xi)$.
     \end{enumerate}
-    This extends to a function $\beta\colon\P_{<\omega}((\Gamma\cup\set\top)^*)\to\P_{<\omega}((\Gamma\cup\set\top)^*)$
+    This extends to a function $\beta\colon\P_{<\omega}(\Gamma^*)\to\P_{<\omega}(\Gamma^*)$
     in the natural way.
     We then define the relation $\xi\to\xi'$ to mean that $\xi'\in\beta(\xi)$; and we define $\sto$ to be the reflexive and
     transitive closure of $\to$.
 
     We then define the language of $B$ (or the language \emph{recognized} by $B$) to be
-    $$ \L(B) = \set{w\in\Sigma^*}[\square w\sto\top] $$
+    $$ \L(B) = \set{w\in\Sigma^*}[\square w\square\sto\top] $$
     We define the class $\nNBR$ to be the class of all languages recognized by $\nNBR$ schemas.
     And we define $\sNBR=\bigcup_n\nNBR$.
 
 \end{definition}
 
 Note that an $\sNBR$-schema may be defined similar to an $\nNBR$-schema, but where the initial $\beta$-reducer returns finite
-subsets of $(\Gamma\cup\set\top)^*$ (denoted $\P_{<\omega}((\Gamma\cup\set\top)^*)$).
+subsets of $\Gamma^*$ (denoted $\P_{<\omega}(\Gamma^*)$); or equivalently $\hb$ is a finite subset
+$$ \hb \subseteq \Gamma\times(\Gamma\cup\set\epsilon)\times\Gamma^* $$
 This is since $\hb$ will return a longest string of some length $n$, and then the schema is an $\nNBR$ schema.
 
-\subsection{Context-Free Languages}
+Furthermore, we don't gain any power if we define $\L(B)$ as one of the following:
+\begin{align*}
+    \L(B) &= \set{w\in\Sigma^*}[\square w\sto\top],\\
+    \L(B) &= \set{w\in\Sigma^*}[w\square\sto\top],\\
+    \L(B) &= \set{w\in\Sigma^*}[w\sto\top]
+\end{align*}
 
-Recall the definition of context-free languages:
+Notice that $\sNBR=\pNBR2$; this is not difficult to prove.
+Take an $\nNBR$-schema $B=(\Sigma,\Gamma,\square,\top,\hb)$ and define a $\pNBR2$-schema
+$B_2=(\Sigma,\Gamma_2,\square,\top,\hb_2)$ as follows: $\Gamma_2$ will contain $\Gamma$ as well as every prefix of strings
+returned by $\hb$ (each prefix is distinct, if two strings have the same prefix, or the same string is returned by two different
+reductions, we consider them distinct).
+Given such a prefix $\xi$, denote the symbol in $\Gamma_2$ by $\mbox\xi$.
+Then if $\sigma_1\cdots\sigma_n\in\hb(\tau_1,\tau_2)$, we define
+$$ \hb_2(\tau_1,\tau_2) = \mbox{\sigma_1\cdots\sigma_n},\quad
+\hb_2(\mbox{\sigma_1\cdots\sigma_k},\epsilon)=\set{\mbox{\sigma_1\cdots\sigma_{k-1}}\sigma_k}\hbox{ for $k\leq n$} $$
+If $\perp\hb(\tau_1,\tau_2)$, then $\perp\in\hb_2(\tau_1,\tau_2)$ as well.
+
+\begin{lemma}
+
+    $\sNBR=\pNBR2$
+
+\end{lemma}
+
+\subsection{Context-Free Languages and $\pNBR1$}
 
 \begin{definition}
 
@@ -147,87 +171,11 @@ Recall the definition of context-free languages:
 
 \end{definition}
 
-Our goal of this section is to investigate the relationship between the classes $\CFL$ and $\nNBR,\sNBR$.
-
-\begin{lemma}
-
-    $\CFL\subseteq\sNBR$.
-
-\end{lemma}
-
-\begin{proof}
-
-    Let $G=(\Sigma,V,S,P)$ be a context-free grammar.
-    We construct an \sNBR-schema $B=(\Sigma,\Gamma,S,\epsilon,\hb)$, where $\Gamma=V\cup\Sigma\cup\overline\Sigma$ where
-    $\overline\Sigma$ is a disjoint copy of $\Sigma$.
-    For each production rule $A\vdash\alpha\in P$ we place $\perp,\overline\alpha^r\in\hb(A,\epsilon)$ (where $\overline\alpha$
-    is $\alpha$ where $\sigma\in\Sigma$ is replaced with $\overline\sigma\in\overline\Sigma$).
-    And for $\sigma\in\Sigma$, $\hb(\overline\sigma,\sigma)=\set{\epsilon}$.
-
-    Note that $A\to^*\overline\alpha\in(V\cup\overline\Sigma)^*$, and so when reducing $A$, we can choose any variable to
-    reduce.
-    That is, if $A_1\to\alpha_1$ and $A_2\to\alpha_2$, and $A\to^*\gamma_1A_1\gamma_2A_2\gamma_3$, then we have that in a single
-    reduction we can either get $\gamma_1\alpha_1\gamma_2A_2\gamma_3$ or we get  $\gamma_1A_1\gamma_2\alpha_2\gamma_3$.
-    This is because elements of $\overline\Sigma$ won't be reduced, and all other reductions (of variables) may be skipped, as
-    they contain $\perp$.
-
-    Now we claim that for any $n\geq0$ and $A\in V$, if $A\vdash^n\alpha$ iff $A\to^n\overline\alpha^r$.
-    This is clear by induction: for $n=0$ this is because $\alpha=A$.
-    For $n=1$ this is by definition.
-    Now suppose $A\vdash^n\alpha_1B\alpha_3$ and $B\vdash\alpha_2$, so that $A\vdash^{n+1}\alpha_1\alpha_2\alpha_3$.
-    Then by induction $A\to^n\alpha_3^rB\alpha_1^r$ and by definition $B\to\alpha_2^r$, so that we have
-    $A\to^{n+1}\alpha_3^r\alpha_2^r\alpha_1^r=(\alpha_1\alpha_2\alpha_3)^r$ as required.
-    The other direction is proven in a similar way.
-
-    If $w\in\L(G)$, we have that $S\vdash^*w$, and so $Sw\sto\overline w^rw$, which clearly then $\sto\epsilon$.
-    So $w\in\L(B)$.
-
-    Now if $Aw\sto\overline\alpha w_2$, then we claim there exists a $w_1$ such that $w=w_1w_2$ and $A\vdash^*w_1\alpha^r$.
-    We do this by induction on the number of steps in the reduction, $n$.
-    For $n=0,1$ this is clear ($w_1=\epsilon$) in both cases.
-    Now suppose $Aw\to^n\overline\alpha w_2$, then $w=w_1w_2$ and $A\vdash^*w_1\alpha^r$.
-    If the next reduction is in $\overline\alpha$, this must be a variable reduction, which means that $A\vdash^*w_1(\alpha')^r$
-    and $Aw\to^{n+1}\overline\alpha' w_2$, so $w'_1=w_1$ still satisfies the requirement.
-    Otherwise, the reduction is of the form
-    $$ Aw\to^n\overline\alpha'\overline\sigma\sigma w'_2 \to\overline\alpha'w'_2 $$
-    In which case $w=w_1w_2=w_1\sigma w'_2$, so that $w'_1$ must be $w_1\sigma$.
-    Now, notice that $A\vdash^*w_1\alpha^r=w_1(\alpha'\sigma)^r=w_1\sigma(\alpha')^r=w'_1(\alpha')^r$ as required.
-
-    So we have that $Sw\sto\epsilon$, so $w_2=\epsilon$ and thus $w_1=w$, meaning $S\vdash^*w$.
-    Thus if $w\in\L(B)$, $w\in\L(G)$, as required.
-    \qed
-
-\end{proof}
-
-Notice that the parameter of the $\sNBR$-schema is dependent only on the length of the production strings in $G$.
-That is $B$ is an $\nNBR$-schema where $n=\max\set{\abs\alpha}[A\vdash_G\alpha]$.
-Every context-free grammar has an equivalent in Chomsky normal form (CNF), whose $n$ is $2$.
-Thus $\CFL\subseteq\pNBR2$.
-
-In fact, $\sNBR=\pNBR2$; this is not difficult to prove.
-Take an $\nNBR$-schema $B=(\Sigma,\Gamma,\square,\top,\hb)$ and define a $\pNBR2$-schema
-$B_2=(\Sigma,\Gamma_2,\square,\top,\hb_2)$ as follows: $\Gamma_2$ will contain $\Gamma$ as well as every prefix of strings
-returned by $\hb$ (each prefix is distinct, if two strings have the same prefix, or the same string is returned by two different
-reductions, we consider them distinct).
-Given such a prefix $\xi$, denote the symbol in $\Gamma_2$ by $\mbox\xi$.
-Then if $\sigma_1\cdots\sigma_n\in\hb(\tau_1,\tau_2)$, we define
-$$ \hb_2(\tau_1,\tau_2) = \mbox{\sigma_1\cdots\sigma_n},\quad
-\hb_2(\mbox{\sigma_1\cdots\sigma_k},\epsilon)=\set{\mbox{\sigma_1\cdots\sigma_{k-1}}\sigma_k}\hbox{ for $k\leq n$} $$
-If $\perp\hb(\tau_1,\tau_2)$, then $\perp\in\hb_2(\tau_1,\tau_2)$ as well.
-
-\begin{lemma}
-
-    $\sNBR=\pNBR2$
-
-\end{lemma}
-
-Though, the most important result is as follows:
-
-\begin{lemma}
+\begin{theorem}
 
     $\CFL\subseteq\pNBR1$
 
-\end{lemma}
+\end{theorem}
 
 \begin{proof}
 
@@ -259,6 +207,131 @@ Though, the most important result is as follows:
 
 \end{proof}
 
+\subsection{Rewrite Systems}
+
+We first begin by taking a different perspective on $\beta$-reduction.
+
+\begin{definition}
+
+    An \emph{$n$-$\beta$-rewrite system} ($\BRW n$-system) is a tuple $B=(\Sigma,V,\hb)$, where
+    \begin{enumerate}
+        \item $\Sigma$ is a finite alphabet;
+        \item $V$ is a finite set of variables, disjoint from $\Sigma$;
+        \item $\hb$ is the \emph{initial $\beta$-function} a function
+        $$ \hb\colon \Gamma\times(\Gamma\cup\set\epsilon)\to\P(\Gamma^{\leq n}) $$
+        Where $\Gamma=\Sigma\cup V$.
+        Equivalently, a $\hb$ is a relation
+        $$ \hb \subseteq \Gamma\times(\Gamma\cup\set\epsilon)\times\Gamma^{\leq n} $$
+    \end{enumerate}
+    We can also call an $\BRW n$-system a $\sBRW$-system.
+
+\end{definition}
+
+\begin{definition}
+
+    Let $B$ be a $\BRW n$-system, then we define the binary relation $\to_B$ on $\Gamma^*$ as follows: we write
+    $\alpha\to_B\gamma$ if $\alpha=\alpha_1\sigma\tau\alpha_2$, where $\sigma\in\Gamma$ and $\tau\in\Gamma\cup\set\epsilon$ and
+    $\gamma=\alpha_1\hb(\sigma\tau)\alpha_2$.
+    We then define $\to_B^*$ to be the transitive and reflexive closure of $\to$.
+
+    Further, we define $\tto_B$ and $\tto^*_B$ to be restrictions of $\to_B$ and $\to^*_B$ to $\Sigma^*$.
+
+    Call two $\sBRW$s $B_1$ and $B_2$ \emph{equivalent} if ${\tto_{B_1}^*}={\tto_{B_2}^*}$
+
+\end{definition}
+
+Notice that unlike with $\sNBR$-schemas, in $\sBRW$-systems all reductions may be done non-deterministically.
+E.g. given a string $abc$, we can reduce either $a,b$ or $b,c$.
+As we will see, this doesn't impose any practical limitations for $n\geq2$.
+
+Using a proof similar to the one for $\sNBR$-schemas, we get the following result:
+
+\begin{lemma}
+
+    Every $\sBRW$-system is equivalent to a $\BRW2$-system.
+
+\end{lemma}
+
+\begin{definition}
+
+    A \emph{semi-Thue system} (or a \emph{string rewriting system}) is a pair $T=(\Sigma,R)$ where $\Sigma$ is an alphabet
+    (not necessarily finite), and $R$ is a binary relation on $\Sigma^*$.
+    Instead of $(u,v)\in R$ we write $u\vdash_Tv$.
+    We extend this relation to other $\Sigma$-strings as follows: if $u\vdash_Tv$ then for any $\alpha,\gamma\in\Sigma^*$ we
+    declare $\alpha u\gamma\vdash_T\alpha v\gamma$.
+    We let $\vdash_T^*$ be the reflexive and transitive closure of $\vdash_T$.
+
+    If both $\Sigma$ and $R$ are finite, we call $T$ \emph{finite}.
+
+\end{definition}
+
+Finite semi-Thue systems are Turing complete.
+This is clear since every formal grammar forms a finite semi-Thue system.
+
+\begin{lemma}
+
+    $\sBRW$ (and thus $\BRW2$) is Turing complete.
+
+\end{lemma}
+
+\begin{proof}
+
+    It is sufficient to show that for every finite semi-Thue system $T=(\Sigma,R)$, there exists a $\sBRW$-system $B$ such that
+    ${\tto_B^*}={\vdash_T^*}$.
+
+    Let $B=(\Sigma,V,\hb)$, where for every string $u$ in $R$ we add all the prefixes of $u$ to $V$.
+    We can assume that for each $u$ of $R$ the substrings added are unique (and we view multiple occurrences of $u$ in $R$ as
+    distinct).
+    We write elements of $V$ in boxes to distinguish them.
+
+    Now for $u\vdash_Tv$, let us suppose that $u\neq\epsilon$.
+    So let $u=\sigma_1\cdots\sigma_n$ and $v=\tau_1\cdots\tau_m$, then we add rules
+    $$
+    \sigma_1,\epsilon\to_B\mbox{\sigma_1},\qquad
+    \mbox{\sigma_1\cdots\sigma_k},\sigma_{k+1}\to_B\mbox{\sigma_1\cdots\sigma_{k+1}}
+    $$
+    and
+    $$
+    \mbox{\sigma_1\cdots\sigma_n},\epsilon\to_B\tau_1\cdots\tau_m
+    $$
+
+    For rules of the form $\epsilon\vdash_Tv$, we add rules $\sigma,\epsilon\to\sigma v$ for every $\sigma\in\Sigma$.
+
+    Clearly if $u\vdash_Tv$ then $u\tto_B^*v$, and vice versa (for the converse we of course have $u\vdash_T^*v$).
+    Thus we have the desired result.
+    \qed
+
+\end{proof}
+
+\begin{theorem}
+
+    Every recursively enumerable language is $\pNBR2$, and conversely every $\sNBR$ language is recursively enumerable.
+
+\end{theorem}
+
+If $T$ is a semi-Thue system, it has an \emph{inverse}: a semi-Thue system $T^r$ where
+$$ u\vdash_{T^r}v \iff v\vdash_Tu $$
+
+\begin{proof}
+
+    Given a recursively enumerable language $L$, there exists some finite semi-Thue system which generates it (meaning
+    $u\in L$ iff $S\vdash_T^*u$ for some $S\in\Sigma$).
+    Then if we look at the inverse semi-Thue system, $u\in L$ iff $u\vdash_{T^r}^*S$.
+    Let $B$ be the $\BRW2$-system equivalent to $T^r$.
+    Then we make it into a $\pNBR2$-schema by setting $\Gamma=\Sigma\cup V$, and $\top=S$.
+    Then we have that
+    $$ u\in L \iff u\vdash_{T^r}^*S \iff u\tto_B^*\top \iff u\in\L(B) $$
+    as required.
+
+    The converse is obvious: every $\sNBR$-schema can obviously be simulated by a nondeterministic Turing machine.
+    \qed
+
+\end{proof}
+
+So we see that for $n\geq2$, whether or not $\BRW2$-systems can always or can only sometimes skip a reduction is immaterial:
+both are Turing complete.
+This justifies us not adding $\bot$ to $\sBRW$-systems.
+
 \subsection{Deterministic $\beta$-Reduction}
 
 \begin{definition}
@@ -266,10 +339,14 @@ Though, the most important result is as follows:
     An $\nNBR$-schema $B$ is \emph{deterministic} if for every $\sigma\in\Gamma,\tau\in\Gamma\cup\set\epsilon$, we have that
     $\lvert\hb(\sigma,\tau)\rvert=1$.
     That is $\hb(\sigma,\tau)=\set\alpha$ or $\hb(\sigma,\tau)=\set\perp$.
+    Furthermore, we require that if $\hb(\sigma,\tau)$ is defined (not equal to $\set\perp$) for some $\tau$,
+    $\hb(\sigma,\epsilon)$ is undefined.
+
     We call a deterministic $\nNBR$-schema an $\nBR$-schema.
     Equivalently an $\nNBR$-schema is one where $\hb$ is a partial function
-    $$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon) \partial (\Gamma\cup\set\top)^{\leq n} $$
+    $$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon) \partial \Gamma^{\leq n} $$
     (Where an image not being defined is equivalent to defining it to be $\set\perp$.)
+    such that if $\hb(\sigma,\tau)$ is defined, $\hb(\sigma,\epsilon)$ is not.
 
     The class of languages accepted by $\nBR$-schemas is denoted $\nBR$.
     Let $\sBR=\bigcup_{n>0}\nBR$.
@@ -360,10 +437,10 @@ A well-known theorem is the following:
         \item if $\action(q,\sigma)=\accept$, then $\hb(q,\sigma)=\top$;
         \item if $\action(q,\sigma)$ is undefined, then $\hb(q,\sigma)=\bot$;
         \item $\hb(q,M_{n,A})=M_{n-1,A}$ if $n>0$;
-        \item $\hb(q,M_{0,A}=q\goto(q,A)$ if defined, otherwise $\perp$;
+        \item $\hb(q,M_{0,A})=q\goto(q,A)$ if defined, otherwise $\perp$;
         \item $\hb(\sigma,\top)=\hb(\top,\sigma)=\top$.
     \end{enumerate}
-    We also add $\hb(q,\epsilon)$ according to $\action(q,\square)$.
+    We also add $\hb(q,\square)$ according to $\action(q,\square)$.
     We can assume that this is not a $\shift$ operation.
 
     It's not hard to see that for a given configuration $c=(v;w)$, we have that $P(c)=(v',w')$ then $vw\to^* v'w'$.
@@ -380,6 +457,204 @@ Since $\sBR=\pBR2$, we get
     $\DCFL\subseteq\pBR2$
 
 \end{lemma}
+
+Notice here that the $\sBR$-schema defined in the lemma above is a $\pBR3$-schema.
+But under the assumption that there are no actions of the form $\reduce(A,0)$ (which corresponds to a rule
+$A\to\epsilon$ in a grammar), we can alter it to be a $\pBR2$-schema.
+We replace rule $2$ with $\hb(q,\sigma)=M_{n-1,A}\sigma$.
+Now, we define the following variation of $\pBR2$-schemas:
+
+\begin{definition}
+
+    A $\pBR2$-schema $B$ is \emph{non-increasing} if for all $\sigma\in\Gamma$,
+    $\abs{\hb(\sigma,\epsilon)}\leq1$ if defined.
+    That is, the string being reduced can never increase in length.
+
+\end{definition}
+
+\begin{definition}
+
+    Let $B$ be a non-increasing $\pBR2$-schema.
+    It is \emph{decreasing} if the following two conditions hold:
+    \begin{enumerate}
+        \item for all $\sigma\in\Gamma$, $\beta^n(\sigma)$ never equals $\sigma$ for all $n\geq1$;
+        \item for all $\sigma,\tau\in\Gamma$, $\beta^n(\sigma\tau)$ never begins with $\sigma$.
+    \end{enumerate}
+
+\end{definition}
+
+It is immediate from this definition that a decreasing $\pBR2$-schema will always terminate on every input
+string.
+
+\begin{lemma}
+
+    Every non-increasing $\pBR2$-schema has an equivalent decreasing $\pBR2$-schema.
+
+\end{lemma}
+
+\begin{proof}
+
+    Let $B$ be a non-increasing $\pBR2$-schema, we construct an equivalent decreasing $\pBR2$-schema $B'$.
+    Our first step we do iteratively, starting with a $\pBR2$-schema $B_1$, until $B_{\abs\Gamma}$.
+    First we add a new symbol $\perp$ to $\Gamma_1$, it has no reduction rules.
+
+    Suppose we have constructed $B_i$ ($0\leq i<\abs\Gamma$, $B_0=B$).
+    For each $\sigma\in\Gamma$ define
+    $$ n_\sigma = \min\set{n\geq1}[\beta^n(\sigma)=\sigma] $$
+    If all $n_\sigma$s are equal to $\infty$, then set $B_{i+1}=B_i$.
+    Otherwise let $\sigma$ has the minimal $n_\sigma$, which means that in the reduction
+    $$ \sigma = \sigma_0 \to \sigma_1 \to \cdots \to \sigma_n = \sigma $$
+    all the $\sigma_i$s are distinct, except for $i=0,n$.
+
+    Now, add new symbols $\sigma'_1,\dots,\sigma'_{n-1}$ to $\Gamma_{i+1}$, with the reduction rules
+    \begin{align*}
+            \hb_{i+1}(\sigma'_j,\epsilon)&=\sigma'_{j+1},\\
+            \hb_{i+1}(\tau,\sigma'_j) &= \hb(\tau,\sigma_j),\\
+            \hb_{i+1}(\sigma'_j,\tau) &= \hb(\sigma_j,\tau)
+    \end{align*}
+    for $0\leq j\leq n-2$ ($\sigma'_0=\sigma$), as well as the rule $\hb_{i+1}(\sigma'_{n-1},\epsilon)=\bot$.
+    We have thus created $B_{i+1}$.
+
+    Now, $B^0=B_{\abs\Gamma}$ has the first property of a non-increasing schema.
+    That is, if $\beta^n(\sigma)$ never equals $\sigma$.
+    Furthermore, $B^0$ and $B_0=B$ are equivalent.
+
+    We now construct $B'$ from $B^0$.
+    For every reduction of the form
+    $$ \sigma_0\tau_0 \to \sigma_1\tau_1 \to \cdots \to \sigma_n\tau_n = \sigma_0\tau_n $$
+    we add characters $\sigma'_1,\dots,\sigma'_{n-1}$.
+    We add the reduction rules
+    \begin{align*}
+            \hb'(\sigma'_i,\tau_i) &= \sigma'_{i+1}\tau_{i+1},\\
+            \hb'(\tau,\sigma'_i) &= \hb(\tau,\sigma_i),\\
+            \hb'(\sigma'_{n-1},\tau_{n-1}) &= \bot
+    \end{align*}
+    This is clearly decreasing, and equivalent to $B^0$.
+    \qed
+
+\end{proof}
+
+\begin{lemma}
+
+    Every decreasing $\pBR2$ schema takes $O(\abs\Gamma\cdot n^2)$ reductions until it terminates.
+
+\end{lemma}
+
+\begin{proof}
+
+    We claim that it  must take at most $\abs\Gamma\cdot n$ reductions to reduce the string by one symbol.
+
+    Let us call reductions of the form $\sigma_1,\sigma_2\to\tau_1\tau_2$ $2$-reductions and $\sigma\to\tau$
+    $1$-reductions.
+
+    Let us create a counter $n(i)$ for the number of $1$- and $2$- reductions at each index.
+    Successive $1$- or $2$-reductions of an index can never place a symbol at that index that has already been
+    there, since the schema is decreasing.
+    This means that $n(i)\leq\abs\Gamma$.
+    And the number of reductions in total is just $\sum_in(i)\leq n\abs\Gamma$, as required.
+
+    Then it takes at most $n$ reductions of a symbol to terminate.
+    Which means that it takes at most $O(\abs\Gamma\cdot n^2)$ reductions.
+    \qed
+
+\end{proof}
+
+\begin{lemma}
+
+    There exists an algorithm which executes any given decreasing $\pBR2$-schema in $O(n^2)$ time.
+    This algorithm is also optimal.
+
+\end{lemma}
+
+\begin{proof}
+
+    Since an execution of a decreasing $\pBR2$-schema requires $O(n^2)$ reductions, any algorithm which
+    executes a $\pBR2$-schema takes $\Omega(n^2)$ time.
+    Thus if we have an algorithm which runs in $O(n^2)$ time, it must be optimal.
+
+    Our algorithm is as follows:
+
+    \def\flag{\mathit{flag}}
+    \algorithm
+        \Function{Execute}{$B,w$}
+            \State $\flag\gets1$
+            \State $i\gets0$
+            \While{$\flag$}
+                \lIf{$\hb(w[i],w[i+1])=\sigma_1\sigma_2$}
+                    Replace $w[i],w[i+1]$ with $\sigma_1,\sigma_2$
+                \lElseIf{$\hb(w[i],w[i+1])=\sigma$}
+                    Replace $w[i],w[i+1]$ with $\sigma$
+                \lElseIf{$\hb(w[i],\epsilon)=\sigma$}
+                    Replace $w[i]$ with $\sigma$
+                \If{any of the above conditions were true, and $\sigma\neq\epsilon$}
+                    \lIf{$\sigma\neq\epsilon$} $i\gets i-1$
+                \Else
+                    \State $i\gets i+1$
+                    \lIf{$i=\abs w$} $\flag\gets0$
+                \EndIf
+            \EndWhile
+            \State\Return $w$
+        \EndFunc
+    \ealgorithm
+
+\end{proof}
+
+Unfortunately, notice that this is not enough to show that $\DCFL\subseteq\pBR1$.
+This is since we conjecture that $\pBR1\subseteq\DCFL$ yet decreasing $\pBR2$-schemas can still recognize non-$\DCFL$ languages.
+In fact, they can recognize non-$\CFL$ languages!
+For example, $\set{a^nb^nc^n}[n\geq0]$ is not $\CFL$ yet is $\pBR2$.
+
+\begin{proposition}
+
+    $\set{a^nb^nc^n}[n\geq0]$ is $\pBR2$.
+
+\end{proposition}
+
+\begin{proof}
+
+    Define $\Gamma=\set{a,b,c,X,\square}$, and $\hb$ as follows:
+    \begin{enumerate}
+        \item $\hb(a,b)=X$: this matches the first $a$ and $b$;
+        \item $\hb(a,X)=Xa$; this moves the $X$ out of the way (eventually the the leftmost side of the string) to allow
+            rule $1$ to repeat;
+        \item $\hb(X,c)=\epsilon$: this matches $X$ with a $c$;
+        \item $\hb(\square,\square)=\top$.
+    \qed
+    \end{enumerate}
+
+\end{proof}
+
+Using a similar proof we can show that $\set{\sigma_1^n\cdots\sigma_m^n}[n\geq0]$ is $\pBR2$ for
+$\Gamma=\set{\sigma_1,\cdots,\sigma_m}$.
+
+\subsubsection{Priorities}
+
+Now, one may be inclined to ask why we don't add priorities to this $\beta$-reduction.
+It turns out that priorities, under certain assumptions, don't add any power.
+Indeed, suppose we added priorities to our $\beta$-reducer, so now our initial $\beta$-reducer is of the form
+$$ \hb\colon\Gamma\times(\Gamma\cup\set\epsilon)\to\P_{<\omega}((\Gamma^{\leq n}\times(\bbZ^2\to\bbZ^n))\cup\set\bot) $$
+and we have an initial priority function $\pi\colon\Sigma\to\bbZ$.
+Let $F$ be the set of priority functions returned by $\hb$, that is
+$$ F = \set{f\colon\bbZ\times\bbZ\to\bbZ^n}[(\xi,f)\in\hb(\sigma,\tau)\hbox{ for some $\sigma,\tau$}] $$
+and let $N=\mathrm{Im}\pi$ be the set of all initial priorities.
+Now let us define $N_0=N$ and $N_{n+1} = N_n\cup\set{k}[n\geq m\in N_n, f\in F,k\in f(n,m)]$.
+We define $N_\infty=\bigcup_{n\geq0}N_n$.
+If $N_\infty$ is finite, then there exists an equivalent \BR-schema (one without priorities).
+
+The proof of this is simple: define $B=(\Sigma,\Gamma',\square,\blacksquare,\bullet,s',\hb')$ where
+\begin{enumerate}
+    \item $\Gamma'=\Gamma\times N_\infty$ which is still finite.
+        Elements of $\Gamma'$ will be written as $\sigma_n$ instead of $(\sigma,n)$.
+    \item $s'$ maps $\sigma$ to $s(\sigma)_{\pi(\sigma)}$.
+    \item If $\hb(\sigma,\tau)=(\alpha,f)$ then for $n\geq m\in N_\infty$ we define $\hb'(\sigma_n,\tau_m)=\xi_{f(n,m)}$.
+        Where by $\xi_{f(n,m)}$ we mean that if $f(n,m)=(n_1,\dots,n_k)$ and $\xi=\sigma^1\cdots\sigma^k$ then
+        $\xi_{f(n,m)}=\sigma^1_{n_1}\cdots\sigma^k_{n_k}$.
+        Note that by definition $n_i\in N_\infty$ so this is well-defined.
+\end{enumerate}
+It is not hard to see that the $\beta$-reducer and this \BR-schema both generate the same language.
+
+The requirement that $N_\infty$ be finite is a strong condition (for example, $F$ cannot include a function of the form $(n,m)\mapsto n+m$ if $N\neq\set0$).
+But in practice this is not a restrictive condition, for example ILang satisfies this condition: if $F$ consists of functions of the form $k_c$ (the constant map), $\snd,\fst$, then $F_\infty$ will trivially be finite.
 
 \end{document}
 
