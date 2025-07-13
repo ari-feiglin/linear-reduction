@@ -425,8 +425,8 @@ We also define the \emph{stack function} $\S\colon\T^*\times\Gamma^*\partial\Gam
     \item if $\bar t$ ends with $\pi_e(\bar t)=q$, then
     \begin{enumerate}
         \item $\S(\bar t(q\vdash p);W)=\S(\bar t;W)$
-        \item $\S(\bar t(q\vdash p+W');W)=\S(\bar t;W'W)$
-        \item $\S(\bar t(q\vdash p-A);AW)=\S(\bar t;W)$
+        \item $\S(\bar t(q\vdash p+A);W)=A\S(\bar t;W)$
+        \item if $\S(\bar t;W)=AW'$ then $\S(\bar t(q\vdash p-A);W)=W'$
     \end{enumerate}
 \end{enumerate}
 Otherwise $\S$ is left undefined.
@@ -514,7 +514,7 @@ $$ w \in \L(P) \iff \hat w \in \L(\widehat P) \iff (q_0,W,f) \in \S(\uline{\hat 
 
 \subsection{The main theorem}
 
-We define the \emph{transition operator} $\tr\colon\T\times\T\partial\T$ as follows:
+We define the \emph{transition reduction operator} $\tr\colon\T\times\T\partial\T$ as follows:
 \begin{align*}
     (p\vdash q+ A),\,(p\vdash r- A) &\mapsto (p\vdash r)\\
     (p\vdash q+ A),\,(q\vdash r) &\mapsto (p\vdash r+ A)\\
@@ -553,113 +553,60 @@ An immediate lemma is the following:
 
 \end{lemma}
 
-We define a $\SR1$ schema $\widehat B$ which will accept $\L(\widehat P)$.
-We define
-$$ \widehat B = (\Sigma\cup\hep, \hat\Lambda, \square, \set\top, \hib) $$
-where
-$$ \hat\Lambda = \P(\T) \cup \P(Q\top) \cup \set{\square,\top} $$
-where $Q\top=\set{p\top}[p\in Q]$.
-And we define the initial reduction function as follows:
-\begin{enumerate}
-    \item $\hib(S_1,S_2)=\tr(S_1,S_2)$ for $S_i\in\P(\T)$ if this is non-empty; otherwise leave it undefined.
-    \item $\hib(S,\square)=\set{p\top}[(p\vdash f+ A)\in S\hbox{ or }(p\vdash f)\in S,\hbox{ where $f\in F$}]$ for $S\in\P(\T)$, if this is non-empty; otherwise leave it undefined.
-    \item $\hib(S_1,S_2)=\set{p\top}[(p\vdash q+ A)\in S_1\hbox{ or }(p\vdash q)\in S_1\hbox{ and }q\top\in S_2]$ for $S_1\in\P(\T)$ and $S_2\in\P(Q\top)$, if this is non-empty; otherwise leave it undefined.
-    \item $\hib(\square,S)=\top$ if $S\in\P(Q\top)$ and $q_0\top\in S$.
-\end{enumerate}
-
-\begin{lemma}
-
-    For $\bar S\in\P(\T)^*$, $\square\bar S\square\hto^*\square\hb^*(\bar S)\square$.
-
-\end{lemma}
-
-\begin{proof}
-
-    $\square,S$ is only reduced if $S\in\P(Q\top)$.
-    And in general we have that if $\bar S\hto^*\bar T$ then $\bar S\square\hto^*\bar T\square$.
-    And since $\square\bar S\hto^*\square\hb^*(\bar S)$ (since reducing $\bar S$ does not produce elements of $\P(Q\top)$), we get the desired result.
-    \qed
-
-\end{proof}
-
-\begin{lemma}
-
-    For $\bar S\in\P(\T)^*$, let $\bar T=\hb^*(\bar S)$.
-    \begin{enumerate}
-        \item if $\bar T=T$, then for $t\in T$ if $\S(t)$ is defined then $t$ is not of the form $p\vdash q- A$.
-        \item otherwise, for any $t_i\in T_i$ for which $\S(\bar t)$ is defined, $t_i$ is of the form $p\vdash q+ A$.
-    \end{enumerate}
-
-\end{lemma}
-
-\begin{proof}
-
-    $\S(p\vdash q- A)$ is undefined, so the first point is trivial.
-
-    Now if $\bar T$ has a length greater than $1$, let $i$ be the first index where $p\vdash q=t_i$ or $p\vdash q- A=t_i$.
-    If $p\vdash q=t_i$, then if $i=1$, we can look to $t_{i+1}$, which must be either $q\vdash r$ or $q\vdash r+ A$, and in any case $\tr$ is defined and so $\bar T$ can be reduced, in contradiction.
-    If $i>1$, then similarly we look to the left of $i$, and this must be of the form $r\vdash p+ A$ (since $i$ is the first index in which something other than $p\vdash q+ A$ occurs), and again $\tr$ is defined.
-
-    Similarly if $p\vdash q- A=t_i$ then $i>1$, and in order for the stack to be defined $t_{i-1}=r\vdash p+ A$, so $\tr$ can be defined.
-    \qed
-
-\end{proof}
-
-\begin{lemma}
-
-    For $\bar S\in\P(\T)^*$, $\S(\bar S)=\S(\hb(\bar S))$
-
-\end{lemma}
-
-This is immediate since $\hb$ only applies $\tr$ on $\bar S$, which doesn't affect $\S$.
-
-\begin{lemma}
-
-    For $\bar S\in\P(\T)^*$, $\square\bar S\square\hto^*\top$ if and only if $(q_0,W,f)\in \S(\bar S)$.
-
-\end{lemma}
-
-\begin{proof}
-
-    Let $\bar T=\hb^*(\bar S)$, then we know that $\square\bar S\square\hto^*\square\bar T\square$ and $\S(\bar S)=\S(\bar T)$.
-
-    For $\bar T=T$, then $\square T\square\hto^*\top$ if and only if $q_0\vdash f$ or $q_0\vdash f+ A$ is in $T$.
-    And in either case $(q_0,W,f)\in\S(\bar T)$.
-    Now, if $\bar T=\bar T'T$, then $\square\bar T'T\square\hto^*\top$ means that $p\vdash f+ A\in T$ so that it can reduce with $\square$.
-    Then $\bar T'$ reduces with $\hib(T,\square)$ if and only if $q\vdash p+ A$ is in the end of $\bar T'$ and $p\vdash f+ B$ is in $T$.
-    And so on inductively we see that this means that $\bar T$ starts with $q_0\vdash q_1+ A_0$ and then has $q_1\vdash q_2+ A_1$ and so on until $q_n\vdash f+ A_n$.
-    Thus $(q_0,A_0\cdots A_n,f)\in\S(\bar T)=\S(\bar S)$.
-
-    And conversely if $(q_0,A_0\cdots A_n,f)\in\S(\bar T)=\S(\bar S)$, then this means that $\bar T$ consists of $T_0\cdots T_n$ such that $q_i\vdash q_{i+1}+ A_i\in T_i$.
-    Thus $\square\bar T\square\hto^*\top$ as required.
-    \qed
-
-\end{proof}
-
-\begin{theorem}
-
-    The following are equivalent:
-    \begin{enumerate}
-        \item $w\in\L(P)$
-        \item $\epsilon(w)\in\L(\hat B)$
-        \item there exists a $\hat w\in E(w)$ such that $\hat w\in\L(\hat B)$
-    \end{enumerate}
-
-\end{theorem}
-
-\begin{proof}
-
-    We know that for $\hat w\in E(w)$, $\hat w\in\L(\hat B)$ if and only if $\square\uline{\hat w}\square\hto^*\top$ iff $(q_0,W,f)\in\S(\uline{\hat w})$ iff $\hat w\in\L(\hat P)$.
-    Since this is for an arbitrary $\hat w\in E(w)$, this proves the three equivalences.
-    \qed
-
-\end{proof}
-
 %Notice that we can actually refine our definition of $\hat\Lambda$ in $\hat B$.
 %Since we start with strings from $\Sigma\cup\hep$, $\hat\Lambda$ must contain $\uline a,\uline\hep$ in order to have a representation of $\Sigma\cup\hep$.
 %Now notice that applying $\hib$ to values from $\P(\T)$ gives values in $\set{(p\vdash q),(p\vdash q+ A)}$.
 %So we can define $\hat\Lambda$ to be
 %$$ \hat\Lambda = \uline{\Sigma\cup\hep} \cup \P\set{(p\vdash q),(p\vdash q+ A)}[p,q\in Q,A\in\Gamma] \cup \P(Q\top) \cup \set{\square,\top} $$
+
+We define $\S_\epsilon$ similar to $\S$, accept we allow $\epsilon$-transitions.
+Specifically, $\S_\epsilon\colon Q\times\T^*\times\Gamma^*\partial\P_{<\omega}(\Gamma^*\times Q)$ where first we define
+$$ \S_\e(p_0,\e;W)=\set{(W',q)}[(p_0,\e,W)\vdash^*(q,\e,W')] $$
+and we recurse:
+\begin{enumerate}
+    \item for $(p\vdash q)$, if $(W',p)\in\S_\e(p_0,\bar t;W)$ and $(q,\epsilon,W')\vdash^*(s,\epsilon,W'')$ then $(W'',s)\in\S_\e(p_0,\bar t(p\vdash q);W)$.
+    \item for $(p\vdash q+A)$, if $(W',p)\in\S_\e(p_0,\bar t;W)$ and $(q,\epsilon,AW')\vdash^*(s,\epsilon,W'')$, then $(W'',s)\in\S_\e(p_0,\bar t(p\vdash q+A);W)$.
+    \item for $(p\vdash q-A)$, if $(AW',p)\in\S_\e(p_0,\bar t;W)$ and $(q,\epsilon,W')\vdash^*(s,\epsilon,W'')$, then $(W'',s)\in\S_\e(p_0,\bar t(p\vdash q+A);W)$.
+\end{enumerate}
+We extend $\S_\e$ to $\P_{<\omega}(\T)^*\times\Gamma^*\to\P_{<\omega}(Q\times\Gamma^*\times Q)$ where
+$$ \S_\e(\bar S;W) = \set{(p_0,W',p_e)}[p_0\in Q,\,(W',p_e)\in\S_\e(p_0,\bar S;W)] $$
+
+Furthermore, for $\bar S=S_1\cdots S_k\in\P(\T)^*$, let us define
+$$ \uline E(\bar S) = \set{\uline\hep^{n_0}S_1\uline\hep^{n_1}\cdots S_k\uline\hep^{n_k}}[n_i\geq0] $$
+so that $\uline E(\uline w)=\uline{E(w)}$.
+
+An immediate result by definition is given two strings of the same length $\bar S$ and $\bar T$, if we define their union $\bar S\cup\bar T$ pointwise (meaning $(\bar S\cup\bar T)_i=S_i\cup T_i$), then we have
+$$ \S_\e(\bar S\cup\bar T;W) = \S_\e(\bar S;W)\cup\S_\e(\bar T;W) $$
+
+\begin{lemma}
+
+    $$ \S_\e(\bar S;W) = \bigcup_{\hbar S\in\uline E(\bar S)}\S(\hbar S;W) $$
+    in particular
+    $$ \S_\e(\uline w;\e) = \bigcup_{\hat w\in E(w)}\S(\hat{\uline w};\e) $$
+
+\end{lemma}
+
+\begin{proof}
+
+    This is done via induction on $\bar S$.
+    For $\bar S=\e$, if $(p_0,W',p_e)\in\S_\e(\e;W)$ then $(p_0,\e,W)\vdash^n(p_e,\e,W')$ then $(p_0,W',p_e)\in\S(\hep^n;W)$.
+    And so on, the idea being that when $(q,\e,W')\vdash^n(s,\e,W'')$, we replace this with $\hep^n$.
+    \qed
+
+\end{proof}
+
+\begin{lemma}
+
+    For $w\in\Sigma^*$,
+    $$ (p,W',q)\in\S_\e(\uline w;W) \iff (p,w,W)\vdash^*(q,\e,W') $$
+
+\end{lemma}
+
+\begin{proof}
+
+    This is immediate due to the previous lemma and lemma \ref{lem:stackandpda}.
+
+\end{proof}
 
 We define the relation $\vdash$ on $Q$, where $p\vdash q$ means that $(p,\epsilon,\epsilon)\vdash(q,\epsilon,W)$
 And $\vdash^*$ is its reflexive and transitive closure.
@@ -676,9 +623,63 @@ Now we define $\square=\set{f\top}[f\in F]\in\P(Q\top)$, and we define $\ib$ as 
 \end{enumerate}
 And we define $S\in\A$ for $S\in\P(Q\top)$ if and only if $q_0\vdash^*p$ for some $p\top\in S$.
 
-Now we claim that $w\in\L(B)$ iff $\epsilon(w)\in\L(\hat B)$.
+\begin{lemma}
 
+    For $\bar S\in\P(\T)^*$, $\S_\e(\bar S)=\S_\e(\beta\bar S)$.
 
+\end{lemma}
+
+\begin{proof}
+
+    We must split into two cases: the first when only a single symbol of $\bar S$ is reduced, and the second when two symbols are reduced.
+
+    In the first case, suppose $\bar S=S_1\cdots S_i\cdots S_n$, and $\beta\bar S=S_1\cdots\ib S_i\cdots S_n$.
+    Now we know that $\ib(S_i)=S_i\cup\tr(S_i,\uline\hep)\cup\tr(\uline\hep,S_i)$, thus
+    $$ \S_\e(\beta\bar S) = \S_\e(\bar S)\cup\S_\e(S_1\cdots\tr(S_i,\uline\hep)\cdots S_n)\cup\S_\e(S_1\cdots\tr(\uline\hep,S_i)\cdots S_n) $$
+    We see then that $\S_\e(\bar S)\subseteq\S_\e(\beta\bar S)$.
+    Conversely, let us look at $E_1=\uline E(S_1\cdots\tr(S_i,\uline\hep)\cdots S_n)$.
+    Since $\S$ is $\tr$-invariant, taking $\S$ of $E_1$ is equal to $\S$ over $\uline E(S_1\cdots S_i\uline\hep\cdots S_n)\subseteq E(\bar S)$.
+    Thus we see that $\S_\e(S_1\cdots\tr(S_i,\uline\hep)\cdots S_n)\subseteq\S_e(\bar S)$, and similar for $\tr(\uline\hep,S_i)$, as required.
+
+    For the second case, this is just due to $\S$ being $\tr$-invariant.
+    \qed
+
+\end{proof}
+
+\begin{lemma}
+
+    For $\bar S\in\P(\T)^*$, $\bar S\square\to^*\top\in\A$ if and only if $(q_0,W,f)\in \S_\e(\bar S;\e)$.
+
+\end{lemma}
+
+\begin{proof}
+
+    Let $\bar T=\hb^*(\bar S)$, then we know that $\bar S\square\to^*\bar T\square$ and $\S_\e(\bar S)=\S_\e(\bar T)$.
+
+    Now, we know that $\bar T\square\to^*\top\in\A$ if and only if $p_i\vdash q_i+A_i\in T_i$ such that
+    \begin{enumerate}
+        \item $A_i\in\Gamma_\e$
+        \item $q_i\vdash^* p_{i+1}$
+        \item $q_0\vdash^* p_1$ and $q_n\vdash^* f\in F$
+    \end{enumerate}
+    And it is not hard to see that this is equivalent.
+    \qed
+
+\end{proof}
+
+In particular we have that $w\in\L(B)$ if and only if $(q_0,W,f)\in\S_\e(\uline w;\e)$ if and only if $(q_0,w,\e)\vdash^*(f,\e,W')$ if and only if $w\in\L(P)$ as required.
+
+\begin{theorem}
+
+    $B$ and $P$ are equivalent.
+
+\end{theorem}
+
+\begin{theorem}
+
+    $\DCFL\subseteq\SR1$
+
+\end{theorem}
 
 \end{document}
 
