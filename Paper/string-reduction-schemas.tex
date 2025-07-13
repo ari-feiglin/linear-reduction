@@ -1,0 +1,685 @@
+\documentclass{llncs}
+
+%\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{mdframed}
+%\usepackage{cleveref}
+
+\def\labelitemi{$\bullet$}
+\def\labelenumi{(\textbf{\arabic{enumi}})}
+
+\usepackage{tikz}
+\usetikzlibrary{trees}
+
+\newcounter{algo}
+
+\floatstyle{ruled}
+\newfloat{algo}{h}{aux}
+\floatname{algo}{Algorithm}
+
+\input preamble
+
+\newcommand{\yoni}[1]{{\begin{mdframed}[linecolor=red]{\color{red}#1}\end{mdframed}}}
+\newcommand{\ari}[1]{{\begin{mdframed}[linecolor=blue]{\color{blue}#1}\end{mdframed}}}
+%\def\yoni#1{\par\noindent\fbox{\color{red}#1}\par}
+%\def\ari#1{\par\noindent\fbox{\color{blue}#1}\par}
+\begin{document}
+
+\title{String Reduction Schemas}
+\author{Ari Feiglin\inst{1}\and Yoni Zohar\inst{1}}
+\institute{Bar-Ilan University, Ramat Gan, Israel}
+
+\maketitle
+
+\begin{abstract}
+
+    In this paper we introduce the concept of \emph{string reduction schemas} in varying levels of strength, creating a new hierarchy of classes of formal languages.
+    We compare this hierarchy with the well-known Chomsky Hierarchy, and show various inclusions and equalities.
+
+    The main result of this paper is to show that $\DCFL$, the class of deterministic context-free languages, is contained in $\SR1$.
+    This is significant as $\SR1$ schemas can be naturally produced by humans and parsers which work with them are simple to implement.
+    Thus string reduction schema are useful in the theory of parsing.
+    We further demonstrate this by utilizing $\SR1$ schema to create parsers in OCaml as well as in \TeX, demonstrating the ease of implementation.
+
+    \keywords{String Reduction Schema\and Context-Free Language\and Parsing}
+
+\end{abstract}
+
+\section{Introduction}
+
+We begin our discussion by briefly giving an overview of parsing.
+
+\ari{TODO: write introduction}
+
+\section{A note on notation}
+
+While we don't use much special notation in this paper, it nevertheless is worthwhile to discuss some potentially non-standard notation we do use.
+
+First we have some language-theoretic notational definitions:
+\begin{itemize}
+    \item Given two words $u,v$, we denote their concatenation by juxtaposition (i.e. $uv$).
+    \item Given a set of symbols $\Sigma$, we denote $\Sigma^*$ the free monoid over $\Sigma$ (i.e. the set of finite-length words over $\Sigma$).
+    \item $\epsilon$ denotes the empty word, which is the unit in the $\Sigma^*$ (i.e. $u\epsilon=\epsilon u=u$ for every $u\in\Sigma^*$).
+    \item Given a set of symbols $X$ and an integer $n\geq0$, we denote by $X^n$ the set of $n$-length words in $X$.
+    For $n=0$, $X^0=\set\epsilon$.
+    \item Similarly, $X^{\leq n}$ denotes the set of words over $X$ of length $\leq n$.
+    Equivalently, $X^{\leq n}=\bigcup_{m\leq n}X^m$.
+    \item Similarly, $X^{(0,n]}=\bigcup_{0<m\leq n}X^m$.
+\end{itemize}
+
+We also have some set-theoretic notational definitions:
+\begin{itemize}
+    \item We denote by $A\partial B$ the type of partial functions from $A$ to $B$ (i.e. functions which need not produce an output for every input).
+    \item $\P(A)$ is the powerset of $A$: the set of all subsets of $A$.
+    \item $\P_{<\omega}(A)$ is the finitary powerset of $A$: the set of all finite subsets of $A$.
+    \item $\P_{>0}(A)$ is the non-empty powerset of $A$: the set of all non-empty substets of $A$.
+    \item Let $X$ be a set and $x$ be some symbol (which in context cannot be mistaken for a set), then we write $X\cup x$ for $X\cup\set x$.
+\end{itemize}
+
+\section{Nondeterministic string reduction schemas}
+
+We begin our introduction of string reduction schema by defining their most general variation.
+As discussed, string reduction schema deviate from the norm of using grammars as input and instead use string rewriting systems.
+This has the benefit of being straightforward to implement programmatically.
+
+\begin{definition}
+
+    A \emph{$\pNSR{n,m}$ schema} (short for $(n,m)$-nondeterministic string rewriting schema) is a tuple
+    $$ B = (\Sigma,\Gamma,\square,\A,\ib) $$
+    where
+    \begin{enumerate}
+        \item $\Sigma$ is the alphabet of \emph{input terminals};
+        \item $\Gamma$ is the alphabet of \emph{intermediary variables} (or just \emph{variables}).
+        It must contain $\Sigma$ (although in general we find it more useful to define an embedding of $\Sigma$ into $\Gamma$);
+        \item $\square\in\Gamma$ is the \emph{string endmarker symbol};
+        \item $\A\subseteq\Gamma$ is the set of \emph{acceptance symbols};
+        \item $\ib$ is the \emph{initial reduction function}, a function:
+        $$ \ib\colon\Gamma^{(0,n]}\longto\P_{>0}(\Gamma^{\leq m}\cup\perp) $$
+        That is, $\ib$ accepts strings over $\Gamma$ of length $\leq n$ and returns a set of strings of length $\leq m$, as well as potentially the symbol $\perp$ (which is a symbol not in any other set of symbols we are to
+        consider).
+    \end{enumerate}
+
+\end{definition}
+
+Of course, if we neglect $\perp$, then $\ib$ can just be viewed as a string rewrite rule $\to$ where the lhs of $\to$ must be strings of length $\leq n$ and the rhs must be strings of length $\leq m$.
+The idea of this a $\pNSR{n,m}$ schema is to define a method to rewrite strings.
+This is done by iterating over an input string from left to right and rewriting any substring non-deterministically which matches an input of $\ib$.
+$\perp$ is a symbol telling us we can skip over this substring (nondeterministically).
+
+For example, if $\Gamma=\set{a,b}$ and $\ib(ab)=\set{a,\perp}$, $\ib(aa)=\set{b}$, and $\ib(ba)=\set{a}$ (assume $\ib(w)=\set\perp$ for all other words $w$).
+Then we can rewrite (we underline the substrings being rewritten)
+$$ a\underline{ba}a \to \underline{aa}a \to \underline{ba} \to a $$
+Notice that in the first rewrite we skip over $\underline{ab}aa$, as we can since $\perp\in\ib(ab)$.
+
+Let us now formalize this idea.
+
+\begin{definition}
+
+    Let $B=(\Sigma,\Gamma,\square,\A,\ib)$ be an $\pNSR{n,m}$ schema.
+    We define its \emph{reduction function} to be the function
+    $$ \beta\colon \Gamma^* \longto \P_{<\omega}(\Gamma^*) $$
+    defined in the following way.
+    Let $S$ be the set of all triplets of words $t_i,u_i,v_i$ where
+    \begin{enumerate}
+        \item $w=t_iu_iv_i$;
+        \item $t_i$ has no subwords $t'$ such that $\perp\notin\ib(t')$;
+        \item $\ib(u_i)\neq\set\perp$;
+    \end{enumerate}
+    then we define
+    $$ \beta(w) = \set{t_iu'v_i}[t_iu_iv_i\in S,\,u'\in\ib(u_i)-\perp] $$
+
+    Now it is indeed simpler to view this as a string rewrite relation.
+    So let us define $\to_B$ to be the binary relation on $\Gamma^*$ defined by $u\to_Bv$ if and only if $v\in\beta(u)$.
+    Let $\to_B^*$ be its reflexive and transitive closure.
+    We define the language of $B$ (or the language \emph{accepted} by $B$) to be
+    $$ \L(B) = \set{w\in\Sigma^*}[\square w\square\to^*\top\in\A] $$
+
+    The class of all languages accepted by an $\pNSR{n,m}$-schema is denoted $\pNSR{n,m}$.
+
+\end{definition}
+
+\ari{TODO: prove $\pNSR{n,m}=\pNSR{2,2}=\RE$ and $\CFL\subseteq\pNSR{2,1}$}
+
+\section{Deterministic string reduction schemas}
+
+\begin{definition}
+
+    A $\pNSR{n,m}$ schema $B$ is \emph{deterministic} if $\abs{\ib(w)}=1$ for every $w\in\Gamma^{\leq n}$, and if $\ib(w)$ is defined, $\ib(w')$ is undefined for all subwords $w'$ of $w$.
+    We call such a schema a $\pSR{n,m}$-schema.
+
+\end{definition}
+
+Notice that if $B$ is a $\pNSR{n,m}$ schema, then $\ib(w)$ is either a singleton of the form $\set u$ or $\set\perp$.
+Thus we can consider $\ib$ to be a partial function
+$$ \ib\colon\Gamma^{\leq n}\partial\Gamma^{\leq m} $$
+where $\ib(w)$ is undefined if (for the previous $\ib$), $\ib(w)=\set\perp$.
+Then our definition of $\beta$ stays similar, except now $S$ is the set of triplets $t_i,u_i,v_i$ where
+\begin{enumerate}
+    \item $w=t_iu_iv_i$;
+    \item $t_i$ has no subwords $t'$ such that $\ib(t')$ is defined;
+    \item $\ib(u_i)$ is defined.
+\end{enumerate}
+
+Now, why can't a subword of a word in the domain of $\ib$ have its image defined?
+Suppose $w=uw'v$ and $\ib(w),\ib(w')$ both be defined.
+Assume that $\ib(u)$ is undefined, then $\beta(w)$ may have a size greater than $1$.
+This is because we can reduce both $w$ as a whole as well as $w'$.
+That is, $\ib(w),u\ib(w')v\in\beta(w)$.
+
+This cannot happen in our definition of deterministic schema:
+
+\begin{lemma}
+
+    Let $B$ be a $\pSR{n,m}$ schema.
+    Then for every $w\in\Gamma^*$, $\beta(w)$ has at most one word.
+
+\end{lemma}
+
+\ari{TODO: formally prove this}
+
+\ari{TODO: show $\pSR{n,m}=\pSR{2,2}$ and describe relation between $\pSR{2,2}$ and $\CFL$}
+
+%\section{$\SR1$ and $\SRe1$ schemas}
+\section{$\SR1$ schemas}
+
+Our main focus of this section is $\SR1$ schemas.
+%Now, recall that for a deterministic schema, subwords of defined words cannot be defined (where a word being defined means it has an image under $\ib$).
+%In the context of $\SR1$ schemas, this is quite restricting, as it means that if $\ib(ab)$ is defined, $\ib(a)$ cannot be.
+%For this reason we define $\SRe1$ schemas which allow for $\ib(ab)$ and $\ib(a)$ to be defined.
+%Intuitively, $\ib(a)$ is only ``used'' if $\ib(ab)$ cannot be.
+
+%\begin{definition}
+%
+%    An $\SRe1$ schema is a $\pNSR{2,1}$ schema such that $\ib(w)$ has a size of one for every $w\in\Gamma^{(0,2]}$.
+%
+%\end{definition}
+%
+%Given a $\SRe1$ schema $B$, we define $\beta(w)$ similarly as before except $S$ is now defined as triplets $t_i,u_i,v_i$ where
+%\begin{enumerate}
+%    \item $w=t_iu_iv_i$;
+%    \item $t_i$ has no $\ib$-defined subwords;
+%    \item $\ib(u_i)$ is defined;
+%    \item if $u_i=a\in\Gamma$ and $v_i=bv'_i$, then $ab$ is not $\ib$-defined.
+%\end{enumerate}
+
+The goal of this section is to show that every deterministic context-free language is $\SR1$.
+To do so, we first define what we mean by a deterministic context-free language.
+
+\subsection{Deterministic context-free languages}
+
+We borrow the following definition from Sipser.
+
+\begin{definition}
+
+    A \emph{deterministic pushdown automaton} (\emph{DPDA}) is a tuple $P=(\Sigma,\Gamma,Q,q_0,F,\delta)$
+    where
+    \begin{enumerate}
+        \item $\Sigma$ is the alphabet of \emph{terminals};
+        \item $\Gamma$ is the alphabet of \emph{stack symbols};
+        \item $Q$ is the set of \emph{states};
+        \item $q_0\in Q$ is the \emph{initial state};
+        \item $F\subseteq Q$ is the set of \emph{accepting states};
+        \item $\delta$ is the \emph{transition function}:
+        $$ \delta\colon Q\times\Sigma_\epsilon\times\Gamma_\epsilon\partial Q\times\Gamma_\epsilon $$
+        such that for every $q\in Q,a\in\Sigma,A\in\Gamma$, exactly one of the following is defined:
+        $$ \delta(q,a,A),\ \delta(q,a,\epsilon),\ \delta(q,\epsilon,A),\ \delta(q,\epsilon,\epsilon) $$
+    \end{enumerate}
+
+\end{definition}
+
+\begin{definition}
+
+    Let $P$ be a DPDA, then we define a \emph{configuration} of $P$ to be an element of
+    $Q\times\Sigma^*\times\Gamma^*$.
+    We define the relation $\vdash_P$ on the set of configurations like so.
+    Given a configuration $(q,aw,AW)$ (where $a\in\Sigma_\epsilon$, $A\in\Gamma_\epsilon$), if
+    $\delta(q,a,A)=(p,B)$, then
+    $$ (q,aw,AW) \vdash_P (p,w,BW) $$
+
+    Let $\vdash^*_P$ be the transitive and reflexive closure of $\vdash_P$.
+    Then the language of $P$ (or the language \emph{recognized} by $P$) is
+    $$ \L(P) = \set{w\in\Sigma^*}[(q_0,w,\epsilon)\vdash^*_P(f,\epsilon,W)\hbox{ for some $f\in F$ and
+    $W\in\Gamma^*$}] $$
+
+    The class of languages recognized by a DPDA is denoted $\DCFL$.
+
+\end{definition}
+
+We take $P$ to be a DPDA, and we hold it constant for the remainder of this section.
+Our goal is to show that there exists a $\SR1$ schema $B$ such that $\L(B)=\L(P)$.
+
+Notice that transitions in a DPDA are one of the following:
+\begin{enumerate}
+    \item $\delta(q,a,A)=(p,B)$
+    \item $\delta(q,a,A)=(p,\epsilon)$
+    \item $\delta(q,a,\epsilon)=(p,A)$
+    \item $\delta(q,a,\epsilon)=(p,\epsilon)$
+    \item $\delta(q,\epsilon,A)=(p,B)$
+    \item $\delta(q,\epsilon,A)=(p,\epsilon)$
+    \item $\delta(q,\epsilon,\epsilon)=(p,A)$
+    \item $\delta(q,\epsilon,\epsilon)=(p,\epsilon)$
+\end{enumerate}
+We can cut some of these out.
+That is,
+\begin{enumerate}
+    \item $\delta(q,a,A)=(p,B)$ is unnecessary.
+    We can add another state $p_B$ and replace this with two transitions: $\delta(q,a,A)=(p_B,\epsilon)$ and $\delta(p_B,\epsilon,\epsilon)=(p,B)$.
+    \setcounter{enumi}{2}
+    \item $\delta(q,a,\epsilon)=(p,A)$ is unnecessary.
+    We can add another state $p_A$ and replace this with two transitions: $\delta(q,a,\epsilon)=(p_A,\epsilon)$ and $\delta(p_A,\epsilon,\epsilon)=(p,A)$.
+    \setcounter{enumi}{4}
+    \item $\delta(q,\epsilon,A)=(p,B)$ is unnecessary for the same reason as $(1)$.
+    \setcounter{enumi}{7}
+    \item $\delta(q,\epsilon,\epsilon)=(p,\epsilon)$ is unnecessary, as it is the only transition between $q$ and $p$, so we can simply unify $q$ and $p$.
+\end{enumerate}
+So we are left with four types of transitions:
+\begin{enumerate}
+        \setcounter{enumi}{1}
+    \item a read \& pop transition (read a character from the stream, and accordingly pop a character from the stack and change states);
+        \setcounter{enumi}{3}
+    \item a read transition (read a character from the stream, and accordingly change states);
+        \setcounter{enumi}{5}
+    \item a pop transition (pop a character from the stack without reading from the stream, and change states accordingly);
+    \item a push transition (push a character onto the stack without reading from the stream, and change states accordingly).
+\end{enumerate}
+
+Notice the following interesting, yet simple, observation.
+Define $\widehat P$ to be the same DPDA as $P$, except we now consider $\epsilon$-moves as moves with an actual letter of the alphabet (call it, say $\hep$).
+For $w\in\Sigma^*$, let us define $E(w)$ to be all the possible ways of placing $\hep$ in $w$:
+$$ E(w) = \set{\hep^{n_0}a_0\hep^{n_1}\cdots\hep^{n_k}a_k\hep^{n_{k+1}}}[w=a_0\cdots a_k,\,n_i\geq0] $$
+Then $w\in\L(P)$ if and only if there exists a $\widehat w\in E(w)$ such that $\widehat w\in\L(\widehat P)$.
+
+Let's formalize the concept of $\widehat P$.
+Given a DPDA $P=(\Sigma,\Gamma,Q,q_0,F,\delta)$, define $\widehat P=(\Sigma\cup\hep,\Gamma,Q,q_0,F,\widehat\delta)$ where for $q\in Q,a\in\Sigma,A\in\Gamma_\epsilon$, $\widehat\delta(q,a,A)=\delta(q,a,A)$.
+And instead of $\epsilon$-transitions we have explicit $\hep$-transitions:
+$$ \widehat\delta(q,\hep,A) = \delta(q,\epsilon,A) $$
+Let us denote by $\hvdash$ the derivation relation of $\widehat P$ (contrasting with $P$'s, which we use $\vdash$ for).
+We call $\widehat P$ the \emph{$\epsilon$-free counterpart of $P$}.
+
+It would be nice to have a function mapping $w\in\L(P)$ to $\epsilon(w)\in\L(\widehat P)$.
+We can construct such a function inductively.
+Since $P$ is deterministic, for every configuration $c_0$, there is at most one configuration $c_1$ such that $c_0\vdash c_1$.
+Thus for a given configuration $c_0$ we can construct a unique path $c_0\vdash c_1\vdash\cdots\vdash c_n\nvdash$.
+We define $\epsilon(c_0)$ by induction on $n$.
+\begin{enumerate}
+    \item For $n=0$, meaning $(p,w,W)\nvdash$, we define $\epsilon(p,w,W)=w$.
+    \item We split into two cases for $n>0$:
+        \begin{enumerate}
+            \item if $(p,w,W)\vdash(q,w,W')$, we define $\epsilon(p,w,W)=\hep\epsilon(q,w,W')$.
+            \item if $(p,aw,W)\vdash(q,w,W')$, we define $\epsilon(p,aw,W)=a\epsilon(q,w,W')$.
+        \end{enumerate}
+\end{enumerate}
+And we let $\epsilon(w)=\epsilon(q_0,w,\epsilon)$.
+
+We prove the correctness of this definition in the following lemmas:
+
+\begin{lemma}
+
+    $(p,w,W)\vdash(q,w',W')$ iff $(p,\epsilon(p,w,W),W)\hvdash(q,\epsilon(q,w',W'),W')$
+
+\end{lemma}
+
+\begin{proof}
+
+    If $(p,w,W)\vdash(q,w',W')$, we split into cases:
+    \begin{enumerate}
+        \item If $w'=w$, then $\epsilon(p,w,W)=\hep\epsilon(q,w,W')$ and the transition is an $\epsilon$-transition.
+         So
+         $$ (p,\epsilon(p,w,W),W) = (p,\hep\epsilon(q,w,W'),W) \hvdash (q,\epsilon(q,w,W'),W') $$
+        \item If $w=aw'$ then $\epsilon(p,w,W)=a\epsilon(q,w,W')$ and
+        $$ (p,\epsilon(p,w,W),W)=(p,a\epsilon(q,w,W'),W') \hvdash (q,\epsilon(q,w,W'),W') $$
+    \end{enumerate}
+
+    And conversely, suppose $(p,w,W)\vdash(p',w'',W'')$
+    Then we just showed that $(p,\epsilon(p,w,W),W)\hvdash(p',\epsilon(p',w'',W''),W'')$.
+    Thus $p'=q$, $W''=W'$.
+    Then we just split into cases regarding if $w=w''$, or $w=aw''$.
+    \qed
+
+\end{proof}
+
+Immediately from this lemma we get by induction on $n\geq0$ that
+$$ (p,w,W)\vdash^n(q,w',W') \iff (p,\epsilon(p,w,W),W)\hvdash^n(q,\epsilon(q,w',W'),W') $$
+Now, $(p,w,W)\nvdash$ if and only if $\epsilon(p,w,W)=w$ by definition.
+So we get that
+$$ (p,w,W)\vdash^n(q,w',W')\nvdash \iff (p,\epsilon(p,w,W),W)\hvdash^n(q,w',W')\hnvdash $$
+In particular, for $f\in F$ (since we are assuming there are no $\epsilon$-transitions from final states):
+$$ (q_0,w,\epsilon)\vdash^*(f,\epsilon,W) \iff (q_0,\epsilon(w),\epsilon) \hvdash^* (f,\epsilon,W) $$
+Thus we get the desired result:
+
+\begin{theorem}
+
+    $w\in\L(P)$ if and only if $\epsilon(w)\in\L(\widehat P)$.
+
+\end{theorem}
+
+We now prove a related result.
+
+\begin{lemma}
+
+    For $\hat w\in E(w)$, if $(p,\hat w,W)\hvdash(q,\hat u,U)$ then $(p,w,W)\vdash(q,u,U)$.
+    By induction this means that $(p,\hat w,W)\hvdash^*(q,\hat u,U)$ implies $(p,\hat w,W)\hvdash(q,u,U)$.
+
+\end{lemma}
+
+\begin{proof}
+
+    Notice that substrings of strings from $E(w)$ are strings in $E(u)$ for some substring $u$ of $w$, so this statement is well-formed.
+    Now, if $\hat w=\hep\hat u$ then we have $(p,\hep\hat u,W)\hvdash(q,\hat u,U)$, so by definition this means that (since $\hat u\in E(w)$), $(p,u,W)\vdash(q,u,U)$.
+    And if $\hat w=a\hat u$ then we have the desired result as well, since the transitions of $\widehat P$ and $P$ on elements of $\Sigma$ are identical.
+    \qed
+
+\end{proof}
+
+\begin{theorem}
+
+    $w\in\L(P)$ if and only if there exists a $\hat w\in E(w)$ such that $\hat w\in\L(\widehat P)$.
+
+\end{theorem}
+
+\begin{proof}
+
+    The first direction is true due to the above theorem, taking $\hat w=\epsilon(w)$.
+    For the converse, suppose $\hat w\in\L(\widehat P)$, meaning $(q_0,\hat w,\epsilon)\hvdash^*(f,\epsilon,W)$.
+    By the above lemma, this means $(q_0,w,\epsilon)\vdash^*(f,\epsilon,W)$ and so $w\in\L(P)$.
+    \qed
+
+\end{proof}
+
+Summarizing,
+
+\begin{corollary}
+
+    The following are equivalent:
+    \begin{enumerate}
+        \item $w\in\L(P)$
+        \item $\epsilon(w)\in\L(\widehat P)$
+        \item for some $\hat w\in E(w)$, $\hat w\in\L(\widehat P)$.
+    \end{enumerate}
+
+\end{corollary}
+
+
+%Let $P$ be a DPDA.
+%Let us define the \emph{set of transition symbols} to be
+%$$ \T = \set{(p\vdash q+W),\;(p\vdash q-A)}[p,q\in Q,W\in\Gamma^*,A\in\Gamma] $$
+%Furthermore, we define the \emph{projections} $\pi_b,\pi_e\colon\T\to Q$ where $\pi_b(p\vdash q\circ X)=p$ and $\pi_e(p\vdash q\circ X)=q$.
+%We extend these to $\T^+\to Q$ where
+%$$ \pi_b(t_1\cdots t_n) = \pi_b(t_1),\qquad \pi_e(t_1\cdots t_n) = \pi_e(t_n) $$
+
+Let $P$ be a DPDA.
+Let us define the \emph{set of transition symbols} to be
+$$ \T = \set{(p\vdash q),\;(p\vdash q+A),\;(p\vdash q-A)}[p,q\in Q,A\in\Gamma] $$
+Furthermore, we define the \emph{projections} $\pi_b,\pi_e\colon\T\to Q$ where $\pi_b(p\vdash q\circ X)=p$ and $\pi_e(p\vdash q\circ X)=q$.
+We extend these to $\T^+\to Q$ where
+$$ \pi_b(t_1\cdots t_n) = \pi_b(t_1),\qquad \pi_e(t_1\cdots t_n) = \pi_e(t_n) $$
+
+We also define the \emph{stack function} $\S\colon\T^*\times\Gamma^*\partial\Gamma^*$ recursively as follows:
+\begin{enumerate}
+    \item $\S(\epsilon;W)=W$
+    \item if $\bar t$ ends with $\pi_e(\bar t)=q$, then
+    \begin{enumerate}
+        \item $\S(\bar t(q\vdash p);W)=\S(\bar t;W)$
+        \item $\S(\bar t(q\vdash p+W');W)=\S(\bar t;W'W)$
+        \item $\S(\bar t(q\vdash p-A);AW)=\S(\bar t;W)$
+    \end{enumerate}
+\end{enumerate}
+Otherwise $\S$ is left undefined.
+
+We extend $\S$ to $\S\colon\P(\T)^*\times\Gamma^*\to\P(Q\times\Gamma^*\times Q)$ by
+$$ \S(T_1\cdots T_n;W) = \set{(\pi_b(\bar t),\,\S(\bar t;W),\,\pi_e(\bar t))}[\bar t=t_1\cdots t_n,\,t_i\in T_i] $$
+For $\epsilon$, we let
+$$ \S(\epsilon;W) = \set{(q,W,q)}[q\in Q] $$
+this agrees (pretty much) with our definition.
+
+An immediate consequence of our definitions is
+
+\begin{lemma}
+
+    If $\bar S,\bar T\in\P(\T)^*$
+    $$ (p_1,W_1,p_2)\in \S(\bar S;W_0) \hbox{ and } (p_2,W_2,p_3)\in \S(\bar T;W_1) $$
+    then $(p_1,W_2,p_3)\in \S(\bar S\bar T;W_0)$.
+
+\end{lemma}
+
+Given a letter $a\in\Sigma$, we define $\uline a\in\P(\T)$ by
+%\begin{align*}
+%    \uline a &{}= \set{p\vdash q+W}[(p,a,\epsilon)\vdash(p',\epsilon,\epsilon)\vdash^*(q,\epsilon,W)]\cup\\
+%    &\hphantom{{}={}}\set{p\vdash q-A}[(p,a,A)\vdash(q,\epsilon,\epsilon)]
+%\end{align*}
+\begin{align*}
+    \uline a &{}= \set{p\vdash q}[\delta(p,a,\epsilon)=(q,\epsilon)]\cup\\
+    &\hphantom{{}={}} \set{p\vdash q-A}[\delta(p,a,A)=(q,\epsilon)]
+\end{align*}
+Similarly we define
+%\begin{align*}
+%    \uline\epsilon &{}= \set{p\vdash q+W}[(p,\epsilon,\epsilon)\vdash^+(q,\epsilon,W)]\cup\\
+%    &\hphantom{{}={}}\set{p\vdash q-A}[(p,\epsilon,A)\vdash(q,\epsilon,\epsilon)]
+%\end{align*}
+\begin{align*}
+    \uline\hep &= \set{p\vdash q+A}[\delta(p,\epsilon,\epsilon)=(q,A)]\cup\\
+    &\hphantom{{}={}} \set{p\vdash q-A}[\delta(p,\epsilon,A)=(q,\epsilon)]
+\end{align*}
+Given a word $w=a_1\cdots a_n\in(\Sigma\cup\hep)^*$, we define $\uline w=\uline a_1\cdots\uline a_n\in\P(\T)^*$.
+
+These definitions come together in the following lemma:
+
+\begin{lemma}   \label{lem:stackandpda}
+
+    For $w\in(\Sigma\cup\hep)^+$,
+    $$ (p,W',q)\in \S(\uline{w};W) \iff (p,w,W)\hvdash^*(q,\epsilon,W') . $$
+
+\end{lemma}
+
+\begin{proof}
+
+    First suppose that $(p,W',q)\in \S(\uline w;W)$.
+    For the base case of $w$ having a length of one, we split into two cases:
+    \begin{enumerate}
+        \item if $w=a\in\Sigma$, then $(p,W',q)\in \S(\uline a;W)$ if and only if $p\vdash q\in\uline a$ and $W'=W$, or if $p\vdash q- A\in\uline a$ and $W=AW'$.
+        In the former, this means that $\delta(p,a,\epsilon)=(q,\epsilon)$ and so $(p,a,W)\hvdash(q,\epsilon,W=W')$ as required.
+        In the latter case, this means that $\delta(p,a,A)=(q,\epsilon)$ and so $(p,a,W=AW')\hvdash(q,\epsilon,W')$ as required.
+        \item if $w=\hep$, then $(p,W',q)\in \S(\uline\hep;W)$ if and only if $p\vdash q+ A\in\uline\hep$ and $W'=AW$, or if $p\vdash q- A\in\uline\hep$ and $W=AW'$.
+        Then we do the same as before and chase definitions.
+    \end{enumerate}
+    We now induct.
+    If $(p,W',q)\in \S(\uline w\uline a;W)$, suppose $t_i\in\uline w_i$ and $s\in\uline a$ such that $W'=\S(\bar ts;W)$ and $\pi_b(\bar t)=p$ and $\pi_e(s)=q$.
+    Now, let $W''=\S(\bar t;W)$ and $p'=\pi_e(\bar t)$.
+    Then $(p,W'',p')\in \S(\uline w;W)$, so by induction $(p,w,W)\hvdash^*(p',\epsilon,W'')$ and so $(p,wa,W)\hvdash^*(p',a,W'')$.
+    Furthermore, we know that $(p',W',q)\in \S(\uline a;W'')$ and so by the base case $(p',a,W'')\hvdash(q,\epsilon,W')$.
+    Together this tells us that $(p,wa,W)\hvdash^*(q,\epsilon,W')$ as required.
+
+    Now we assume the converse: that $(p,w,W)\hvdash^*(q,\epsilon,W')$.
+    Again we induct on the length of $w$ (which is the length of the derivation).
+    For the base case we have that $(p,a,W)\hvdash(q,\epsilon,W')$.
+    Then $\delta(p,a,\_)=(q,\_)$, and splitting the options here into cases on $\_$, we see that indeed $(p,W',q)\in \S(\uline a;W)$.
+
+    Now suppose that
+    $$ (p,wa,W) \hvdash (q',a,W'') \hvdash (q,\epsilon,W') $$
+    Then we have that $(p,w,W)\hvdash^*(q',a,W'')$ so by induction $(p,W'',q')\in \S(\uline w;W)$.
+    And by the base case we have that $(q',W',q)\in \S(\uline a;W'')$, so then $(p,W',q)\in \S(\uline w\uline a;W)$ as required.
+    \qed
+
+\end{proof}
+
+In particular we have that for $f\in F$ and $\hat w\in E(w)$ (strictly speaking, we need to quantify by saying ``there exists a $\hat w\in E(w)$''):
+$$ (q_0,W,f) \in \S(\uline{\hat w};\epsilon) \iff (q_0,\hat w,\epsilon)\hvdash^*(f,\epsilon,W) $$
+and thus
+$$ w \in \L(P) \iff \hat w \in \L(\widehat P) \iff (q_0,W,f) \in \S(\uline{\hat w};\epsilon) $$
+
+\subsection{The main theorem}
+
+We define the \emph{transition operator} $\tr\colon\T\times\T\partial\T$ as follows:
+\begin{align*}
+    (p\vdash q+ A),\,(p\vdash r- A) &\mapsto (p\vdash r)\\
+    (p\vdash q+ A),\,(q\vdash r) &\mapsto (p\vdash r+ A)\\
+    (p\vdash q),\,(q\vdash r+ A) &\mapsto (p\vdash r+ A)\\
+    %(p\vdash q- A),\,(q\vdash r) &\mapsto (p\vdash r- A)\\
+    %(p\vdash q),\,(q\vdash r- A) &\mapsto (p\vdash r- A)\\
+    (p\vdash q),\,(q\vdash r) &\mapsto (p\vdash r)
+\end{align*}
+This extends to $\tr\colon\P(\T)\times\P(\T)\to\P(\T)$ by $\tr(S_1,S_2)=\set{\tr(s_1,s_2)}[s_i\in S_i]$.
+
+The following lemma is immediate:
+
+\begin{lemma}
+
+    If $\tr(t_n,t_{n+1})$ is defined, then for every $W\in\Gamma^*$,
+    $$ \S(t_1\cdots t_{n-1}\tr(t_n,t_{n+1});W) = \S(t_1\cdots t_nt_{n+1}; W) $$
+    and the lhs is defined iff the rhs is.
+
+\end{lemma}
+
+This implies
+
+\begin{lemma}
+
+    If $\tr(t_i,t_{i+1})$ is defined for any $i$, then for every $W\in\Gamma^*$,
+    $$ \S(t_1\cdots \tr(t_i,t_{i+1})\cdots t_n; W) = \S(t_1\cdots t_it_{i+1}\cdots t_n;W) $$
+
+\end{lemma}
+
+An immediate lemma is the following:
+
+\begin{lemma}
+
+    $\pi_\X(t,s)=\pi_\X(\tr(t,s))$ for $\X\in\set{b,e}$.
+    Thus if $\bar t\in T^+$ and $\bar s\in T^+$ is the result of applying $\tr$ to $\bar t$ at an arbitrary position, then $\pi_\X(\bar t)=\pi_\X(\bar s)$ for $\X\in\set{b,e}$.
+
+\end{lemma}
+
+We define a $\SR1$ schema $\widehat B$ which will accept $\L(\widehat P)$.
+We define
+$$ \widehat B = (\Sigma\cup\hep, \hat\Lambda, \square, \set\top, \hib) $$
+where
+$$ \hat\Lambda = \P(\T) \cup \P(Q\top) \cup \set{\square,\top} $$
+where $Q\top=\set{p\top}[p\in Q]$.
+And we define the initial reduction function as follows:
+\begin{enumerate}
+    \item $\hib(S_1,S_2)=\tr(S_1,S_2)$ for $S_i\in\P(\T)$ if this is non-empty; otherwise leave it undefined.
+    \item $\hib(S,\square)=\set{p\top}[(p\vdash f+ A)\in S\hbox{ or }(p\vdash f)\in S,\hbox{ where $f\in F$}]$ for $S\in\P(\T)$, if this is non-empty; otherwise leave it undefined.
+    \item $\hib(S_1,S_2)=\set{p\top}[(p\vdash q+ A)\in S_1\hbox{ or }(p\vdash q)\in S_1\hbox{ and }q\top\in S_2]$ for $S_1\in\P(\T)$ and $S_2\in\P(Q\top)$, if this is non-empty; otherwise leave it undefined.
+    \item $\hib(\square,S)=\top$ if $S\in\P(Q\top)$ and $q_0\top\in S$.
+\end{enumerate}
+
+\begin{lemma}
+
+    For $\bar S\in\P(\T)^*$, $\square\bar S\square\hto^*\square\hb^*(\bar S)\square$.
+
+\end{lemma}
+
+\begin{proof}
+
+    $\square,S$ is only reduced if $S\in\P(Q\top)$.
+    And in general we have that if $\bar S\hto^*\bar T$ then $\bar S\square\hto^*\bar T\square$.
+    And since $\square\bar S\hto^*\square\hb^*(\bar S)$ (since reducing $\bar S$ does not produce elements of $\P(Q\top)$), we get the desired result.
+    \qed
+
+\end{proof}
+
+\begin{lemma}
+
+    For $\bar S\in\P(\T)^*$, let $\bar T=\hb^*(\bar S)$.
+    \begin{enumerate}
+        \item if $\bar T=T$, then for $t\in T$ if $\S(t)$ is defined then $t$ is not of the form $p\vdash q- A$.
+        \item otherwise, for any $t_i\in T_i$ for which $\S(\bar t)$ is defined, $t_i$ is of the form $p\vdash q+ A$.
+    \end{enumerate}
+
+\end{lemma}
+
+\begin{proof}
+
+    $\S(p\vdash q- A)$ is undefined, so the first point is trivial.
+
+    Now if $\bar T$ has a length greater than $1$, let $i$ be the first index where $p\vdash q=t_i$ or $p\vdash q- A=t_i$.
+    If $p\vdash q=t_i$, then if $i=1$, we can look to $t_{i+1}$, which must be either $q\vdash r$ or $q\vdash r+ A$, and in any case $\tr$ is defined and so $\bar T$ can be reduced, in contradiction.
+    If $i>1$, then similarly we look to the left of $i$, and this must be of the form $r\vdash p+ A$ (since $i$ is the first index in which something other than $p\vdash q+ A$ occurs), and again $\tr$ is defined.
+
+    Similarly if $p\vdash q- A=t_i$ then $i>1$, and in order for the stack to be defined $t_{i-1}=r\vdash p+ A$, so $\tr$ can be defined.
+    \qed
+
+\end{proof}
+
+\begin{lemma}
+
+    For $\bar S\in\P(\T)^*$, $\S(\bar S)=\S(\hb(\bar S))$
+
+\end{lemma}
+
+This is immediate since $\hb$ only applies $\tr$ on $\bar S$, which doesn't affect $\S$.
+
+\begin{lemma}
+
+    For $\bar S\in\P(\T)^*$, $\square\bar S\square\hto^*\top$ if and only if $(q_0,W,f)\in \S(\bar S)$.
+
+\end{lemma}
+
+\begin{proof}
+
+    Let $\bar T=\hb^*(\bar S)$, then we know that $\square\bar S\square\hto^*\square\bar T\square$ and $\S(\bar S)=\S(\bar T)$.
+
+    For $\bar T=T$, then $\square T\square\hto^*\top$ if and only if $q_0\vdash f$ or $q_0\vdash f+ A$ is in $T$.
+    And in either case $(q_0,W,f)\in\S(\bar T)$.
+    Now, if $\bar T=\bar T'T$, then $\square\bar T'T\square\hto^*\top$ means that $p\vdash f+ A\in T$ so that it can reduce with $\square$.
+    Then $\bar T'$ reduces with $\hib(T,\square)$ if and only if $q\vdash p+ A$ is in the end of $\bar T'$ and $p\vdash f+ B$ is in $T$.
+    And so on inductively we see that this means that $\bar T$ starts with $q_0\vdash q_1+ A_0$ and then has $q_1\vdash q_2+ A_1$ and so on until $q_n\vdash f+ A_n$.
+    Thus $(q_0,A_0\cdots A_n,f)\in\S(\bar T)=\S(\bar S)$.
+
+    And conversely if $(q_0,A_0\cdots A_n,f)\in\S(\bar T)=\S(\bar S)$, then this means that $\bar T$ consists of $T_0\cdots T_n$ such that $q_i\vdash q_{i+1}+ A_i\in T_i$.
+    Thus $\square\bar T\square\hto^*\top$ as required.
+    \qed
+
+\end{proof}
+
+\begin{theorem}
+
+    The following are equivalent:
+    \begin{enumerate}
+        \item $w\in\L(P)$
+        \item $\epsilon(w)\in\L(\hat B)$
+        \item there exists a $\hat w\in E(w)$ such that $\hat w\in\L(\hat B)$
+    \end{enumerate}
+
+\end{theorem}
+
+\begin{proof}
+
+    We know that for $\hat w\in E(w)$, $\hat w\in\L(\hat B)$ if and only if $\square\uline{\hat w}\square\hto^*\top$ iff $(q_0,W,f)\in\S(\uline{\hat w})$ iff $\hat w\in\L(\hat P)$.
+    Since this is for an arbitrary $\hat w\in E(w)$, this proves the three equivalences.
+    \qed
+
+\end{proof}
+
+%Notice that we can actually refine our definition of $\hat\Lambda$ in $\hat B$.
+%Since we start with strings from $\Sigma\cup\hep$, $\hat\Lambda$ must contain $\uline a,\uline\hep$ in order to have a representation of $\Sigma\cup\hep$.
+%Now notice that applying $\hib$ to values from $\P(\T)$ gives values in $\set{(p\vdash q),(p\vdash q+ A)}$.
+%So we can define $\hat\Lambda$ to be
+%$$ \hat\Lambda = \uline{\Sigma\cup\hep} \cup \P\set{(p\vdash q),(p\vdash q+ A)}[p,q\in Q,A\in\Gamma] \cup \P(Q\top) \cup \set{\square,\top} $$
+
+We define the relation $\vdash$ on $Q$, where $p\vdash q$ means that $(p,\epsilon,\epsilon)\vdash(q,\epsilon,W)$
+And $\vdash^*$ is its reflexive and transitive closure.
+
+We now define our $\SR1$ schema, $B=(\Sigma,\Lambda,\square,\A,\ib)$.
+We begin by defining
+$$ \Lambda = \P(\T) \cup \P(Q\top) $$
+Now we define $\square=\set{f\top}[f\in F]\in\P(Q\top)$, and we define $\ib$ as follows:
+\begin{enumerate}
+    \item for $S\in\P(\T)$, $\ib(S,\epsilon)=S\cup\tr(S,\uline\hep)\cup\tr(\uline\hep,S)$ if this is not equal to $S$;
+    \item for $S_1,S_2\in\P(\T)$, $\ib(S_1,S_2)=\tr(S_1,S_2)$ if non-empty;
+    \item for $S_1\in\P(\T),S_2\in\P(Q\top)$,
+    $$ \ib(S_1,S_2)=\set{p\top}[\hbox{$p\vdash q$ or $p\vdash q+A\in S_1$ and $q\vdash^*s$ such that $s\top\in S_2$}] $$
+\end{enumerate}
+And we define $S\in\A$ for $S\in\P(Q\top)$ if and only if $q_0\vdash^*p$ for some $p\top\in S$.
+
+Now we claim that $w\in\L(B)$ iff $\epsilon(w)\in\L(\hat B)$.
+
+
+
+\end{document}
+
+
